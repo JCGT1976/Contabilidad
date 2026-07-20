@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>SIF · Contabilidad</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --brand: #002855;
+    --brand-2: #003876;
+    --accent: #0057B8;
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --text: #0f1e33;
+    --muted: #5b6b82;
+    --border: #e3e8f0;
+    --success: #16a34a;
+    --warn: #f59e0b;
+    --danger: #dc2626;
+    --shadow: 0 1px 3px rgba(0,40,85,0.08), 0 8px 24px rgba(0,40,85,0.06);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px; letter-spacing: 0.2px; }
+  .brand-icon { font-size: 22px; }
+  .brand-sub { font-weight: 400; opacity: 0.8; font-size: 13px; margin-left: 8px; }
+  .header-right { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  .user-chip { background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 20px; }
+  .icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+  .icon-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* Tabs */
+  .tabs {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 18px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--brand); border-bottom-color: var(--accent); font-weight: 600; }
+
+  /* Content */
+  main { padding: 28px; max-width: 1400px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .card {
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .card h2 { margin: 0 0 6px 0; font-size: 18px; color: var(--brand); }
+  .card .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state h3 { color: var(--text); margin: 0 0 6px 0; font-size: 16px; }
+  .empty-state p { font-size: 14px; margin: 6px 0; }
+
+  /* Login screen */
+  .login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    padding: 20px;
+  }
+  .login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,40,85,0.3);
+  }
+  .login-card h1 { color: var(--brand); margin: 0 0 4px 0; font-size: 22px; text-align: center; }
+  .login-card .sub-title { color: var(--muted); text-align: center; margin-bottom: 24px; font-size: 13px; }
+  .login-msg { padding: 12px 14px; border-radius: 8px; background: #fff4e6; color: #92400e; font-size: 13px; text-align: center; }
+  .login-msg a { color: var(--brand); font-weight: 600; text-decoration: none; }
+
+  /* Loading spinner */
+  .loader {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Version footer */
+  .version-footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* Update banner (auto-updater) */
+  .update-banner {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--brand);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    display: none;
+    z-index: 100;
+    align-items: center;
+    gap: 12px;
+  }
+  .update-banner button {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 12px 16px; }
+    main { padding: 16px; }
+    .tabs { padding: 0 16px; }
+    .brand-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="loginScreen" class="login-screen" style="display:none;">
+  <div class="login-card">
+    <h1>📒 SIF · Contabilidad</h1>
+    <p class="sub-title" data-i18n="login_sub">Módulo General Ledger del ERP MI Global</p>
+    <p class="login-msg">
+      <span data-i18n="login_msg">Debes ingresar desde el portal para acceder a este módulo.</span><br><br>
+      <a href="https://jcgt1976.github.io/SIF-Portal/">→ SIF-Portal</a>
+    </p>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none;">
+
+  <header>
+    <div class="brand">
+      <span class="brand-icon">📒</span>
+      <span>SIF · Contabilidad</span>
+      <span class="brand-sub" data-i18n="header_sub">General Ledger — MI Global</span>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="btnLang" title="Idioma">🌐 <span id="langLabel">ES</span></button>
+      <span class="user-chip" id="userChip">—</span>
+      <button class="icon-btn" onclick="volverPortal()">← <span data-i18n="back_portal">Portal</span></button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-tab="empresas" data-i18n="tab_empresas">🏢 Empresas</div>
+    <div class="tab" data-tab="catalogo" data-i18n="tab_catalogo">📚 Catálogo de Cuentas</div>
+    <div class="tab" data-tab="balanzas" data-i18n="tab_balanzas">⚖️ Balanzas</div>
+    <div class="tab" data-tab="estados" data-i18n="tab_estados">📊 Estados Financieros</div>
+    <div class="tab" data-tab="ratios" data-i18n="tab_ratios">📈 Ratios</div>
+    <div class="tab" data-tab="polizas" data-i18n="tab_polizas">📝 Pólizas</div>
+  </nav>
+
+  <main>
+
+    <!-- Empresas -->
+    <div class="view active" data-view="empresas">
+      <div class="card">
+        <h2 data-i18n="empresas_title">🏢 Empresas del Grupo</h2>
+        <p class="sub" data-i18n="empresas_sub">Configuración fiscal y contable de las cinco empresas de MI Global.</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_empresas">Próximamente: Ariitranst · Autobot · Boughts · Comercial · Internacional</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Catálogo -->
+    <div class="view" data-view="catalogo">
+      <div class="card">
+        <h2 data-i18n="catalogo_title">📚 Catálogo de Cuentas</h2>
+        <p class="sub" data-i18n="catalogo_sub">Cuentas contables con código agrupador SAT (Anexo 24 RMF).</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_catalogo">Próximamente: import desde ContPAQ i, edición, agrupador SAT.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Balanzas -->
+    <div class="view" data-view="balanzas">
+      <div class="card">
+        <h2 data-i18n="balanzas_title">⚖️ Balanzas de Comprobación</h2>
+        <p class="sub" data-i18n="balanzas_sub">Saldos iniciales, movimientos y saldos finales por empresa y período.</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_balanzas">Próximamente: import histórico, balanza consolidada, XML SAT.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estados Financieros -->
+    <div class="view" data-view="estados">
+      <div class="card">
+        <h2 data-i18n="estados_title">📊 Estados Financieros</h2>
+        <p class="sub" data-i18n="estados_sub">Balance General, Estado de Resultados, Flujo de Efectivo y Cambios en el Capital.</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_estados">Próximamente: por empresa y consolidado, con comparativos.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ratios -->
+    <div class="view" data-view="ratios">
+      <div class="card">
+        <h2 data-i18n="ratios_title">📈 Ratios Financieros</h2>
+        <p class="sub" data-i18n="ratios_sub">Liquidez, endeudamiento, rentabilidad y actividad.</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_ratios">Próximamente: análisis DuPont, benchmarks por industria.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pólizas -->
+    <div class="view" data-view="polizas">
+      <div class="card">
+        <h2 data-i18n="polizas_title">📝 Pólizas Contables</h2>
+        <p class="sub" data-i18n="polizas_sub">Ingresos, Egresos, Diario y Cheques con partida doble.</p>
+        <div class="empty-state">
+          <div class="icon">🏗️</div>
+          <h3 data-i18n="wip_title">En construcción</h3>
+          <p data-i18n="wip_polizas">Próximamente: captura, import desde ContPAQ i, XML SAT bajo requerimiento.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="version-footer">
+    SIF-Contabilidad <span id="versionLabel">v2026.07.20.1</span> · MI Global
+  </div>
+
+</div>
+
+<div class="update-banner" id="updateBanner">
+  <span data-i18n="update_msg">Nueva versión disponible</span>
+  <button onclick="location.reload(true)" data-i18n="update_btn">Actualizar</button>
+</div>
+
+<script>
+// ==================== APP_VERSION (bump obligatorio en cada push) ====================
+const APP_VERSION = '2026.07.20.1';
+
+// ==================== Supabase ====================
+const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_JMa-_sAXxw3LQrlqR7p7ww_RqLhY89X';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const PORTAL_URL = 'https://jcgt1976.github.io/SIF-Portal/';
+
+// ==================== i18n ====================
+const I18N = {
+  es: {
+    login_sub: 'Módulo General Ledger del ERP MI Global',
+    login_msg: 'Debes ingresar desde el portal para acceder a este módulo.',
+    header_sub: 'General Ledger — MI Global',
+    back_portal: 'Portal',
+    tab_empresas: '🏢 Empresas',
+    tab_catalogo: '📚 Catálogo de Cuentas',
+    tab_balanzas: '⚖️ Balanzas',
+    tab_estados: '📊 Estados Financieros',
+    tab_ratios: '📈 Ratios',
+    tab_polizas: '📝 Pólizas',
+    empresas_title: '🏢 Empresas del Grupo',
+    empresas_sub: 'Configuración fiscal y contable de las cinco empresas de MI Global.',
+    wip_title: 'En construcción',
+    wip_empresas: 'Próximamente: Ariitranst · Autobot · Boughts · Comercial · Internacional',
+    catalogo_title: '📚 Catálogo de Cuentas',
+    catalogo_sub: 'Cuentas contables con código agrupador SAT (Anexo 24 RMF).',
+    wip_catalogo: 'Próximamente: import desde ContPAQ i, edición, agrupador SAT.',
+    balanzas_title: '⚖️ Balanzas de Comprobación',
+    balanzas_sub: 'Saldos iniciales, movimientos y saldos finales por empresa y período.',
+    wip_balanzas: 'Próximamente: import histórico, balanza consolidada, XML SAT.',
+    estados_title: '📊 Estados Financieros',
+    estados_sub: 'Balance General, Estado de Resultados, Flujo de Efectivo y Cambios en el Capital.',
+    wip_estados: 'Próximamente: por empresa y consolidado, con comparativos.',
+    ratios_title: '📈 Ratios Financieros',
+    ratios_sub: 'Liquidez, endeudamiento, rentabilidad y actividad.',
+    wip_ratios: 'Próximamente: análisis DuPont, benchmarks por industria.',
+    polizas_title: '📝 Pólizas Contables',
+    polizas_sub: 'Ingresos, Egresos, Diario y Cheques con partida doble.',
+    wip_polizas: 'Próximamente: captura, import desde ContPAQ i, XML SAT bajo requerimiento.',
+    update_msg: 'Nueva versión disponible',
+    update_btn: 'Actualizar'
+  },
+  en: {
+    login_sub: 'General Ledger module of MI Global ERP',
+    login_msg: 'You must log in from the portal to access this module.',
+    header_sub: 'General Ledger — MI Global',
+    back_portal: 'Portal',
+    tab_empresas: '🏢 Companies',
+    tab_catalogo: '📚 Chart of Accounts',
+    tab_balanzas: '⚖️ Trial Balances',
+    tab_estados: '📊 Financial Statements',
+    tab_ratios: '📈 Ratios',
+    tab_polizas: '📝 Journal Entries',
+    empresas_title: '🏢 Group Companies',
+    empresas_sub: 'Tax and accounting configuration for the five MI Global companies.',
+    wip_title: 'Under construction',
+    wip_empresas: 'Coming soon: Ariitranst · Autobot · Boughts · Comercial · Internacional',
+    catalogo_title: '📚 Chart of Accounts',
+    catalogo_sub: 'Accounting accounts with SAT grouping code (Anexo 24 RMF).',
+    wip_catalogo: 'Coming soon: import from ContPAQ i, edit, SAT grouper.',
+    balanzas_title: '⚖️ Trial Balance',
+    balanzas_sub: 'Beginning balances, activity and ending balances by company and period.',
+    wip_balanzas: 'Coming soon: historical import, consolidated balance, SAT XML.',
+    estados_title: '📊 Financial Statements',
+    estados_sub: 'Balance Sheet, Income Statement, Cash Flow and Changes in Equity.',
+    wip_estados: 'Coming soon: per company and consolidated, with comparatives.',
+    ratios_title: '📈 Financial Ratios',
+    ratios_sub: 'Liquidity, leverage, profitability and activity.',
+    wip_ratios: 'Coming soon: DuPont analysis, industry benchmarks.',
+    polizas_title: '📝 Journal Entries',
+    polizas_sub: 'Revenue, Disbursement, General and Check entries with double-entry.',
+    wip_polizas: 'Coming soon: capture, import from ContPAQ i, SAT XML on demand.',
+    update_msg: 'New version available',
+    update_btn: 'Update'
+  }
+};
+
+let currentLang = localStorage.getItem('sif_lang') || 'es';
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N[currentLang][key]) el.textContent = I18N[currentLang][key];
+  });
+  document.getElementById('langLabel').textContent = currentLang.toUpperCase();
+  document.documentElement.lang = currentLang;
+}
+
+document.getElementById('btnLang').addEventListener('click', () => {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  localStorage.setItem('sif_lang', currentLang);
+  applyI18n();
+});
+
+// ==================== Tab switching ====================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === target));
+  });
+});
+
+// ==================== Portal return ====================
+function volverPortal() {
+  window.location.href = PORTAL_URL;
+}
+
+// ==================== Auth bootstrap ====================
+async function bootstrapAuth() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      return;
+    }
+    const email = session.user.email || 'usuario';
+    const username = email.split('@')[0];
+    document.getElementById('userChip').textContent = username;
+    document.getElementById('versionLabel').textContent = 'v' + APP_VERSION;
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'none';
+    applyI18n();
+  } catch (e) {
+    console.error('Auth error', e);
+    window.location.replace(PORTAL_URL);
+  }
+}
+
+// ==================== Auto-updater (cero-caché) ====================
+async function checkForUpdates() {
+  try {
+    const res = await fetch(location.href, { cache: 'no-store', method: 'HEAD' });
+    // Simple check: si el timestamp del recurso cambió, mostrar banner.
+    // Método real: fetch al propio HTML y buscar APP_VERSION distinta.
+    const htmlRes = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    const txt = await htmlRes.text();
+    const m = txt.match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) {
+      document.getElementById('updateBanner').style.display = 'flex';
+    }
+  } catch (e) { /* silencioso */ }
+}
+
+setInterval(checkForUpdates, 5 * 60 * 1000); // cada 5 min
+
+// ==================== Init ====================
+bootstrapAuth();
+console.log('%c SIF-Contabilidad v' + APP_VERSION + ' ', 'background:#002855;color:#fff;padding:4px 8px;border-radius:4px;');
+</script>
+</body>
+</html>
