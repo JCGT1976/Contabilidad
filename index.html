@@ -44,6 +44,17 @@
   .brand-sub { font-weight: 400; opacity: 0.8; font-size: 13px; margin-left: 8px; }
   .header-right { display: flex; align-items: center; gap: 14px; font-size: 13px; }
   .user-chip { background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 20px; }
+  .role-chip {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .role-chip.admin { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+  .role-chip.cohost { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+  .role-chip.view { background: linear-gradient(135deg, #6b7280, #4b5563); color: #fff; }
   .icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
   .icon-btn:hover { background: rgba(255,255,255,0.25); }
 
@@ -172,6 +183,18 @@
 </head>
 <body>
 
+<!-- Access denied screen -->
+<div id="deniedScreen" class="login-screen" style="display:none;">
+  <div class="login-card">
+    <h1>🚫 <span data-i18n="denied_title">Acceso denegado</span></h1>
+    <p class="sub-title" data-i18n="denied_sub">No tienes permiso para acceder al módulo de Contabilidad.</p>
+    <p class="login-msg">
+      <span data-i18n="denied_msg">Contacta al administrador si necesitas acceso.</span><br><br>
+      <a href="https://jcgt1976.github.io/SIF-Portal/">← SIF-Portal</a>
+    </p>
+  </div>
+</div>
+
 <!-- Login screen -->
 <div id="loginScreen" class="login-screen" style="display:none;">
   <div class="login-card">
@@ -196,6 +219,7 @@
     <div class="header-right">
       <button class="icon-btn" id="btnLang" title="Idioma">🌐 <span id="langLabel">ES</span></button>
       <span class="user-chip" id="userChip">—</span>
+      <span class="role-chip" id="roleChip">—</span>
       <button class="icon-btn" onclick="volverPortal()">← <span data-i18n="back_portal">Portal</span></button>
     </div>
   </header>
@@ -292,7 +316,7 @@
   </main>
 
   <div class="version-footer">
-    SIF-Contabilidad <span id="versionLabel">v2026.07.20.1</span> · MI Global
+    SIF-Contabilidad <span id="versionLabel">v2026.07.20.2</span> · MI Global
   </div>
 
 </div>
@@ -304,7 +328,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.07.20.1';
+const APP_VERSION = '2026.07.20.2';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -345,7 +369,10 @@ const I18N = {
     polizas_sub: 'Ingresos, Egresos, Diario y Cheques con partida doble.',
     wip_polizas: 'Próximamente: captura, import desde ContPAQ i, XML SAT bajo requerimiento.',
     update_msg: 'Nueva versión disponible',
-    update_btn: 'Actualizar'
+    update_btn: 'Actualizar',
+    denied_title: 'Acceso denegado',
+    denied_sub: 'No tienes permiso para acceder al módulo de Contabilidad.',
+    denied_msg: 'Contacta al administrador si necesitas acceso.'
   },
   en: {
     login_sub: 'General Ledger module of MI Global ERP',
@@ -378,7 +405,10 @@ const I18N = {
     polizas_sub: 'Revenue, Disbursement, General and Check entries with double-entry.',
     wip_polizas: 'Coming soon: capture, import from ContPAQ i, SAT XML on demand.',
     update_msg: 'New version available',
-    update_btn: 'Update'
+    update_btn: 'Update',
+    denied_title: 'Access denied',
+    denied_sub: 'You do not have permission to access the Accounting module.',
+    denied_msg: 'Contact the administrator if you need access.'
   }
 };
 
@@ -413,26 +443,135 @@ function volverPortal() {
   window.location.href = PORTAL_URL;
 }
 
-// ==================== Auth bootstrap ====================
+// ==================== Auth bootstrap con RBAC ====================
+const MODULO_ID = 'contabilidad';   // clave del módulo en la columna usuarios.modulos
+let currentUserRol = null;          // admin_master | cohost | view
+let currentUserRow = null;          // fila completa de la tabla usuarios
+
+function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 async function bootstrapAuth() {
   try {
+    // 1. Verificar sesión Supabase
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       return;
     }
-    const email = session.user.email || 'usuario';
+
+    const email = session.user.email || '';
     const username = email.split('@')[0];
-    document.getElementById('userChip').textContent = username;
+
+    // 2. Cargar fila del usuario en la tabla usuarios
+    const { data: userRow, error } = await sb
+      .from('usuarios')
+      .select('*')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!userRow) {
+      console.warn('Usuario no encontrado en tabla usuarios:', username);
+      mostrarDenegado();
+      return;
+    }
+
+    // 3. Validar que tenga contabilidad en su lista de modulos (columna text[])
+    const modulos = userRow.modulos || [];
+    if (!Array.isArray(modulos) || !modulos.includes(MODULO_ID)) {
+      console.warn('Usuario sin permiso al módulo:', username, modulos);
+      mostrarDenegado();
+      return;
+    }
+
+    // 4. OK — cargar app con RBAC aplicado
+    currentUserRow = userRow;
+    currentUserRol = userRow.rol; // admin_master | cohost | view
+
+    document.getElementById('userChip').textContent = userRow.nombre || username;
+    const roleChip = document.getElementById('roleChip');
+    if (currentUserRol === 'admin_master') {
+      roleChip.textContent = '🔓 Admin';
+      roleChip.className = 'role-chip admin';
+    } else if (currentUserRol === 'cohost') {
+      roleChip.textContent = '✏️ Editor';
+      roleChip.className = 'role-chip cohost';
+    } else {
+      roleChip.textContent = '👁️ Lectura';
+      roleChip.className = 'role-chip view';
+    }
+
     document.getElementById('versionLabel').textContent = 'v' + APP_VERSION;
     document.getElementById('app').style.display = 'block';
     document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('deniedScreen').style.display = 'none';
+
     applyI18n();
+    aplicarRBAC();
+
+    console.log('%c SIF-Contabilidad v' + APP_VERSION + ' | ' + username + ' | ' + currentUserRol + ' ',
+      'background:#002855;color:#fff;padding:4px 8px;border-radius:4px;');
   } catch (e) {
     console.error('Auth error', e);
-    window.location.replace(PORTAL_URL);
+    await esperar(500);
+    // No hacer redirect automático a portal para no crear loops. Mostrar login.
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
   }
+}
+
+function mostrarDenegado() {
+  document.getElementById('deniedScreen').style.display = 'flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  applyI18n();
+}
+
+// ==================== RBAC helpers ====================
+function puede(accion) {
+  // acciones: read | write | admin
+  if (!currentUserRol) return false;
+  if (currentUserRol === 'admin_master') return true;
+  if (currentUserRol === 'cohost') return accion !== 'admin';
+  if (currentUserRol === 'view') return accion === 'read';
+  return false;
+}
+
+function requiereWrite(fn) {
+  return function(...args) {
+    if (!puede('write')) {
+      alert(currentLang === 'es'
+        ? 'No tienes permiso para esta acción (solo lectura).'
+        : 'You do not have permission for this action (read only).');
+      return;
+    }
+    return fn.apply(this, args);
+  };
+}
+
+function requiereAdmin(fn) {
+  return function(...args) {
+    if (!puede('admin')) {
+      alert(currentLang === 'es'
+        ? 'Solo el admin master puede realizar esta acción.'
+        : 'Only admin master can perform this action.');
+      return;
+    }
+    return fn.apply(this, args);
+  };
+}
+
+function aplicarRBAC() {
+  // Oculta elementos con clase .only-write o .only-admin según rol
+  const canWrite = puede('write');
+  const canAdmin = puede('admin');
+  document.querySelectorAll('.only-write').forEach(el => {
+    el.style.display = canWrite ? '' : 'none';
+  });
+  document.querySelectorAll('.only-admin').forEach(el => {
+    el.style.display = canAdmin ? '' : 'none';
+  });
 }
 
 // ==================== Auto-updater (cero-caché) ====================
@@ -454,7 +593,6 @@ setInterval(checkForUpdates, 5 * 60 * 1000); // cada 5 min
 
 // ==================== Init ====================
 bootstrapAuth();
-console.log('%c SIF-Contabilidad v' + APP_VERSION + ' ', 'background:#002855;color:#fff;padding:4px 8px;border-radius:4px;');
 </script>
 </body>
 </html>
