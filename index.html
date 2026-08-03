@@ -57,6 +57,20 @@
   .role-chip.view { background: linear-gradient(135deg, #6b7280, #4b5563); color: #fff; }
   .icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
   .icon-btn:hover { background: rgba(255,255,255,0.25); }
+  .topbar { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); padding: 14px 22px; border-radius: 14px; margin-bottom: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .brand-title { font-weight: 700; font-size: 15px; color: #fff; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sync-badge { font-size: 11px; color: rgba(255,255,255,0.75); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display:inline-block; }
+  .user-chip { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.12); border-radius: 20px; padding: 4px 10px 4px 4px; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; background: #ffb703; color: #002855; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .user-meta { display: flex; flex-direction: column; line-height: 1.15; }
+  .user-meta .name { font-size: 11.5px; font-weight: 600; color: #fff; }
+  .user-meta .role { font-size: 9.5px; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: .04em; }
+  .btn-ghost { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 7px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+  html[data-theme="dark"] body { --bg:#0b1220; --panel:#111a2b; --text:#e6ecf5; --muted:#93a1b8; --border:#1f2b40; background: var(--bg); color: var(--text); }
 
   /* Tabs */
   .tabs {
@@ -210,17 +224,27 @@
 <!-- App -->
 <div id="app" style="display:none;">
 
-  <header>
-    <div class="brand">
+  <header class="topbar">
+    <div class="topbar-left">
       <span class="brand-icon">📒</span>
-      <span>SIF · Contabilidad</span>
-      <span class="brand-sub" data-i18n="header_sub">General Ledger — MI Global</span>
+      <div>
+        <div class="brand-title">SIF · Contabilidad</div>
+        <div class="brand-sub" data-i18n="header_sub">General Ledger — MI Global</div>
+      </div>
     </div>
-    <div class="header-right">
-      <button class="icon-btn" id="btnLang" title="Idioma">🌐 <span id="langLabel">ES</span></button>
-      <span class="user-chip" id="userChip">—</span>
-      <span class="role-chip" id="roleChip">—</span>
-      <button class="icon-btn" onclick="volverPortal()">← <span data-i18n="back_portal">Portal</span></button>
+    <div class="topbar-right">
+      <span class="sync-badge"><span class="sync-dot"></span><span data-i18n="connected_label">Conectado a Supabase</span></span>
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">—</div>
+        <div class="user-meta">
+          <span class="name" id="userChip">—</span>
+          <span class="role" id="roleChip">—</span>
+        </div>
+      </div>
+      <button class="btn-ghost" onclick="toggleTheme()">🌓</button>
+      <button class="btn-ghost" id="btnLang" title="Idioma"><span id="langLabel">ES</span></button>
+      <button class="btn-ghost" onclick="volverPortal()">← <span data-i18n="back_portal">Portal</span></button>
+      <button class="btn-ghost" onclick="cerrarSesion()" data-i18n="logout_btn">Cerrar sesión</button>
     </div>
   </header>
 
@@ -340,6 +364,8 @@ const PORTAL_URL = 'https://jcgt1976.github.io/SIF-Portal/';
 const I18N = {
   es: {
     login_sub: 'Módulo General Ledger del ERP MI Global',
+    connected_label: 'Conectado a Supabase',
+    logout_btn: 'Cerrar sesión',
     login_msg: 'Debes ingresar desde el portal para acceder a este módulo.',
     header_sub: 'General Ledger — MI Global',
     back_portal: 'Portal',
@@ -376,6 +402,8 @@ const I18N = {
   },
   en: {
     login_sub: 'General Ledger module of MI Global ERP',
+    connected_label: 'Connected to Supabase',
+    logout_btn: 'Log out',
     login_msg: 'You must log in from the portal to access this module.',
     header_sub: 'General Ledger — MI Global',
     back_portal: 'Portal',
@@ -439,6 +467,19 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ==================== Portal return ====================
+function toggleTheme() {
+  var html = document.documentElement;
+  var cur = html.dataset.theme === "dark" ? "dark" : "light";
+  html.dataset.theme = cur === "dark" ? "light" : "dark";
+  localStorage.setItem("sif_theme", html.dataset.theme);
+}
+(function(){ var t = localStorage.getItem("sif_theme"); if (t === "dark") document.documentElement.dataset.theme = "dark"; })();
+
+async function cerrarSesion() {
+  try { await sb.auth.signOut(); } catch(e) {}
+  window.location.href = PORTAL_URL;
+}
+
 function volverPortal() {
   window.location.href = PORTAL_URL;
 }
@@ -490,6 +531,8 @@ async function bootstrapAuth() {
     currentUserRol = userRow.rol; // admin_master | cohost | view
 
     document.getElementById('userChip').textContent = userRow.nombre || username;
+    var __initials = (userRow.nombre || username).trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    var __avEl = document.getElementById('userAvatar'); if (__avEl) __avEl.textContent = __initials;
     const roleChip = document.getElementById('roleChip');
     if (currentUserRol === 'admin_master') {
       roleChip.textContent = '🔓 Admin';
