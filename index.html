@@ -9,6 +9,7 @@
 <title>SIF · Contabilidad</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
     --brand: #002855;
@@ -193,6 +194,30 @@
     .tabs { padding: 0 16px; }
     .brand-sub { display: none; }
   }
+
+  /* -- XML / CFDIs (Fase 1) -- */
+  .xml-controls{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .xml-controls select{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;cursor:pointer}
+  .xml-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:16px;user-select:none}
+  .xml-drop-zone:hover,.xml-drop-zone.drag-over{border-color:var(--accent);background:rgba(0,87,184,.04)}
+  .drop-icon{font-size:38px;margin-bottom:6px}
+  .xml-hint{color:var(--muted);font-size:13px;text-align:center;padding:14px 0;margin:0}
+  .xml-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  .xml-table th{text-align:left;padding:7px 10px;background:var(--bg);border-bottom:2px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .xml-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .xml-table tr:last-child td{border-bottom:none}
+  .xml-table tr:hover td{background:var(--bg)}
+  .xml-badge{padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-ok{background:#dcfce7;color:#15803d}
+  .badge-info{background:#dbeafe;color:#1d4ed8}
+  .badge-warn{background:#fef3c7;color:#b45309}
+  .badge-err{background:#fee2e2;color:#b91c1c}
+  .btn-sm{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;font-size:12px;color:var(--text);transition:background .15s}
+  .btn-sm:hover{background:var(--bg)}
+  .btn-primary{padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:background .15s}
+  .btn-primary:hover{background:var(--brand)}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed}
+
 </style>
 </head>
 <body>
@@ -255,6 +280,7 @@
     <div class="tab" data-tab="estados" data-i18n="tab_estados">📊 Estados Financieros</div>
     <div class="tab" data-tab="ratios" data-i18n="tab_ratios">📈 Ratios</div>
     <div class="tab" data-tab="polizas" data-i18n="tab_polizas">📝 Pólizas</div>
+    <div class="tab" data-tab="xml" data-i18n="tab_xml">📄 XML / CFDIs</div>
   </nav>
 
   <main>
@@ -337,10 +363,57 @@
       </div>
     </div>
 
+    <!-- XML / CFDIs (Fase 1) -->
+    <div class="view" data-view="xml">
+
+      <div class="card">
+        <h2 data-i18n="xml_title">📄 Contabilizador XML / CFDIs</h2>
+        <p class="sub" data-i18n="xml_sub">Carga masiva de CFDIs (XML o ZIP). Fase 1: importación y almacenamiento.</p>
+
+        <div class="xml-controls">
+          <select id="xmlEmpresaSel" onchange="xmlOnEmpresaChange(this.value)">
+            <option value="">— Empresa —</option>
+          </select>
+          <select id="xmlTerceroSel" onchange="xmlOnTerceroChange(this.value)">
+            <option value="">— Tercero (opcional) —</option>
+          </select>
+        </div>
+
+        <div id="xmlDropZone" class="xml-drop-zone">
+          <div class="drop-icon">📄</div>
+          <p style="margin:8px 0 4px;font-weight:500" data-i18n="xml_drop_title">Arrastra XML o ZIP aquí</p>
+          <p style="margin:0;font-size:13px;color:var(--muted)" data-i18n="xml_drop_hint">o haz clic para seleccionar</p>
+        </div>
+        <input type="file" id="xmlFileInput" multiple accept=".xml,.zip" style="display:none">
+
+        <div id="xmlBufferCont"></div>
+        <div style="margin-top:14px">
+          <button id="xmlBtnGuardar" class="btn-primary" onclick="xmlGuardarLote()" style="display:none">
+            💾 <span data-i18n="xml_save_btn">Guardar en SIF</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:16px" data-i18n="xml_hist_title">📋 Historial de Lotes</h2>
+        <div id="xmlLotesCont"><p class="xml-hint" data-i18n="xml_sel_empresa">Selecciona una empresa para ver el historial.</p></div>
+      </div>
+
+      <div class="card" id="xmlLoteDetail" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h2 style="font-size:16px;margin:0" data-i18n="xml_det_title">🔍 CFDIs del Lote</h2>
+          <button class="btn-sm" onclick="document.getElementById('xmlLoteDetail').style.display='none'">✕ Cerrar</button>
+        </div>
+        <div id="xmlCfdisCont"></div>
+      </div>
+
+    </div>
+
+
   </main>
 
   <div class="version-footer">
-    SIF-Contabilidad <span id="versionLabel">v2026.07.20.2</span> · MI Global
+    SIF-Contabilidad <span id="versionLabel">v2026.08.11.1</span> · MI Global
   </div>
 
 </div>
@@ -352,7 +425,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.07.20.2';
+const APP_VERSION = '2026.08.11.1';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -394,6 +467,15 @@ const I18N = {
     polizas_title: '📝 Pólizas Contables',
     polizas_sub: 'Ingresos, Egresos, Diario y Cheques con partida doble.',
     wip_polizas: 'Próximamente: captura, import desde ContPAQ i, XML SAT bajo requerimiento.',
+    tab_xml: '📄 XML / CFDIs',
+    xml_title: '📄 Contabilizador XML / CFDIs',
+    xml_sub: 'Carga masiva de CFDIs (XML o ZIP). Fase 1: importación y almacenamiento.',
+    xml_drop_title: 'Arrastra XML o ZIP aquí',
+    xml_drop_hint: 'o haz clic para seleccionar',
+    xml_save_btn: 'Guardar en SIF',
+    xml_hist_title: '📋 Historial de Lotes',
+    xml_sel_empresa: 'Selecciona una empresa para ver el historial.',
+    xml_det_title: '🔍 CFDIs del Lote',
     update_msg: 'Nueva versión disponible',
     update_btn: 'Actualizar',
     denied_title: 'Acceso denegado',
@@ -432,6 +514,15 @@ const I18N = {
     polizas_title: '📝 Journal Entries',
     polizas_sub: 'Revenue, Disbursement, General and Check entries with double-entry.',
     wip_polizas: 'Coming soon: capture, import from ContPAQ i, SAT XML on demand.',
+    tab_xml: '📄 XML / CFDIs',
+    xml_title: '📄 XML / CFDI Processor',
+    xml_sub: 'Bulk CFDI upload (XML or ZIP). Phase 1: import and storage.',
+    xml_drop_title: 'Drag XML or ZIP here',
+    xml_drop_hint: 'or click to select files',
+    xml_save_btn: 'Save to SIF',
+    xml_hist_title: '📋 Batch History',
+    xml_sel_empresa: 'Select a company to see batch history.',
+    xml_det_title: '🔍 CFDIs in Batch',
     update_msg: 'New version available',
     update_btn: 'Update',
     denied_title: 'Access denied',
@@ -458,11 +549,12 @@ document.getElementById('btnLang').addEventListener('click', () => {
 });
 
 // ==================== Tab switching ====================
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    const target = tab.dataset.tab;
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
-    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === target));
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    var target = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t === tab); });
+    document.querySelectorAll('.view').forEach(function(v) { v.classList.toggle('active', v.dataset.view === target); });
+    if (target === 'xml') { initXmlTab(); }
   });
 });
 
@@ -616,6 +708,324 @@ function aplicarRBAC() {
     el.style.display = canAdmin ? '' : 'none';
   });
 }
+
+
+// ==================== XML / CFDIs (Fase 1) ====================
+
+var xmlState = { empresaId: null, terceroId: null, lotes: [], buffer: [] };
+var xmlInited = false;
+
+window.initXmlTab = function initXmlTab() {
+  if (!xmlInited) { xmlSetupDropZone(); xmlInited = true; }
+  xmlLoadEmpresas();
+  xmlLoadTerceros();
+  xmlLoadLotes();
+};
+
+async function xmlLoadEmpresas() {
+  var sel = document.getElementById('xmlEmpresaSel');
+  if (!sel) return;
+  var saved = sel.value;
+  var res = await sb.from('cont_empresas').select('id,nombre_corto').eq('activa', true).order('orden_presentacion');
+  if (res.error || !res.data) return;
+  sel.innerHTML = '<option value="">\u2014 Empresa \u2014</option>';
+  res.data.forEach(function(e) {
+    sel.innerHTML += '<option value="' + e.id + '">' + e.nombre_corto + '</option>';
+  });
+  if (saved) { sel.value = saved; }
+}
+
+async function xmlLoadTerceros() {
+  var sel = document.getElementById('xmlTerceroSel');
+  if (!sel) return;
+  var saved = sel.value;
+  var res = await sb.from('cont_terceros').select('id,nombre,rfc,tipo').eq('activo', true).order('nombre');
+  if (res.error || !res.data) return;
+  sel.innerHTML = '<option value="">\u2014 Tercero (opcional) \u2014</option>';
+  res.data.forEach(function(t) {
+    sel.innerHTML += '<option value="' + t.id + '">[' + t.tipo + '] ' + t.nombre + ' &middot; ' + t.rfc + '</option>';
+  });
+  if (saved) { sel.value = saved; }
+}
+
+window.xmlOnEmpresaChange = function xmlOnEmpresaChange(val) {
+  xmlState.empresaId = val ? parseInt(val, 10) : null;
+  xmlLoadLotes();
+};
+
+window.xmlOnTerceroChange = function xmlOnTerceroChange(val) {
+  xmlState.terceroId = val ? parseInt(val, 10) : null;
+};
+
+async function xmlLoadLotes() {
+  var cont = document.getElementById('xmlLotesCont');
+  if (!cont) return;
+  if (!xmlState.empresaId) {
+    cont.innerHTML = '<p class="xml-hint">Selecciona una empresa para ver el historial.</p>';
+    return;
+  }
+  cont.innerHTML = '<p class="xml-hint">Cargando...</p>';
+  var res = await sb.from('cont_xml_lotes')
+    .select('id,tipo_lote,num_cfdis,status,fecha_carga,usuario_cargo,cont_terceros(nombre,rfc)')
+    .eq('empresa_id', xmlState.empresaId)
+    .order('fecha_carga', { ascending: false })
+    .limit(50);
+  if (res.error) {
+    cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">Error: ' + res.error.message + '</p>';
+    return;
+  }
+  xmlState.lotes = res.data || [];
+  xmlRenderLotes();
+}
+
+function xmlRenderLotes() {
+  var cont = document.getElementById('xmlLotesCont');
+  if (!cont) return;
+  if (!xmlState.lotes.length) { cont.innerHTML = '<p class="xml-hint">Sin lotes cargados aun.</p>'; return; }
+  var rows = '';
+  xmlState.lotes.forEach(function(l) {
+    var tercero = l.cont_terceros ? l.cont_terceros.nombre + ' - ' + l.cont_terceros.rfc : '\u2014';
+    var sc = l.status === 'procesado' ? 'badge-ok' : l.status === 'contabilizado' ? 'badge-info' : l.status === 'error' ? 'badge-err' : 'badge-warn';
+    var fecha = l.fecha_carga ? l.fecha_carga.slice(0, 16).replace('T', ' ') : '\u2014';
+    rows += '<tr>'
+      + '<td>#' + l.id + '</td>'
+      + '<td>' + l.tipo_lote + '</td>'
+      + '<td style="font-size:12px">' + tercero + '</td>'
+      + '<td style="text-align:center">' + l.num_cfdis + '</td>'
+      + '<td><span class="xml-badge ' + sc + '">' + l.status + '</span></td>'
+      + '<td>' + fecha + '</td>'
+      + '<td style="color:var(--muted);font-size:12px">' + (l.usuario_cargo || '\u2014') + '</td>'
+      + '<td><button class="btn-sm" onclick="xmlVerLote(' + l.id + ')">Ver</button></td>'
+      + '</tr>';
+  });
+  cont.innerHTML = '<table class="xml-table"><thead><tr>'
+    + '<th>#</th><th>Tipo</th><th>Tercero</th><th>CFDIs</th><th>Status</th><th>Fecha</th><th>Usuario</th><th></th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+window.xmlVerLote = async function xmlVerLote(loteId) {
+  var det  = document.getElementById('xmlLoteDetail');
+  var cont = document.getElementById('xmlCfdisCont');
+  if (!det || !cont) return;
+  cont.innerHTML = '<p class="xml-hint">Cargando CFDIs...</p>';
+  det.style.display = 'block';
+  det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  var res = await sb.from('cont_xml_cfdis')
+    .select('uuid_cfdi,tipo_cfdi,fecha_emision,rfc_emisor,nombre_emisor,rfc_receptor,nombre_receptor,total,moneda,status')
+    .eq('lote_id', loteId)
+    .order('fecha_emision', { ascending: false });
+  if (res.error) { cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">Error: ' + res.error.message + '</p>'; return; }
+  var cfdis = res.data || [];
+  if (!cfdis.length) { cont.innerHTML = '<p class="xml-hint">Sin CFDIs registrados.</p>'; return; }
+  var TL = { I: 'Ingreso', E: 'Egreso', P: 'Pago', N: 'Nomina', T: 'Traslado' };
+  var rows = '';
+  cfdis.forEach(function(c) {
+    var uuid  = c.uuid_cfdi ? c.uuid_cfdi.slice(0, 8) + '...' : '\u2014';
+    var tipo  = TL[c.tipo_cfdi] || c.tipo_cfdi || '\u2014';
+    var fecha = c.fecha_emision ? c.fecha_emision.slice(0, 10) : '\u2014';
+    var total = c.total ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: c.moneda || 'MXN' }).format(c.total) : '\u2014';
+    var sc = c.status === 'contabilizado' ? 'badge-info' : c.status === 'duplicado' ? 'badge-err' : c.status === 'revisado' ? 'badge-warn' : 'badge-ok';
+    rows += '<tr>'
+      + '<td style="font-family:monospace;font-size:11px" title="' + (c.uuid_cfdi || '') + '">' + uuid + '</td>'
+      + '<td>' + tipo + '</td>'
+      + '<td>' + fecha + '</td>'
+      + '<td style="font-size:12px">' + (c.rfc_emisor || '\u2014') + '</td>'
+      + '<td style="font-size:12px;color:var(--muted)">' + (c.nombre_emisor || '').slice(0, 28) + '</td>'
+      + '<td style="font-size:12px">' + (c.rfc_receptor || '\u2014') + '</td>'
+      + '<td style="text-align:right;font-weight:500">' + total + '</td>'
+      + '<td>' + (c.moneda || 'MXN') + '</td>'
+      + '<td><span class="xml-badge ' + sc + '">' + c.status + '</span></td>'
+      + '</tr>';
+  });
+  cont.innerHTML = '<table class="xml-table"><thead><tr>'
+    + '<th>UUID</th><th>Tipo</th><th>Fecha</th><th>RFC Emisor</th><th>Nombre Emisor</th>'
+    + '<th>RFC Receptor</th><th style="text-align:right">Total</th><th>Moneda</th><th>Status</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>';
+};
+
+function xmlSetupDropZone() {
+  var zone = document.getElementById('xmlDropZone');
+  var inp  = document.getElementById('xmlFileInput');
+  if (!zone || !inp) return;
+  zone.addEventListener('dragover',  function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', function()  { zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop',      function(e) { e.preventDefault(); zone.classList.remove('drag-over'); xmlHandleFiles(e.dataTransfer.files); });
+  zone.addEventListener('click',     function()  { inp.click(); });
+  inp.addEventListener('change',     function()  { xmlHandleFiles(inp.files); inp.value = ''; });
+}
+
+function xmlHandleFiles(files) {
+  if (!xmlState.empresaId) { alert('Selecciona una empresa antes de cargar archivos.'); return; }
+  xmlState.buffer = [];
+  document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">Procesando archivos...</p>';
+  document.getElementById('xmlBtnGuardar').style.display = 'none';
+  var pending = 0;
+  Array.from(files).forEach(function(f) {
+    var ext = f.name.split('.').pop().toLowerCase();
+    if (ext === 'xml') {
+      pending++;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var cfdi = xmlParseCfdi(e.target.result, f.name);
+        if (cfdi) { cfdi.xmlContent = e.target.result; xmlState.buffer.push(cfdi); }
+        pending--;
+        if (pending === 0) { xmlRenderBuffer(); }
+      };
+      reader.readAsText(f, 'UTF-8');
+    } else if (ext === 'zip' && typeof JSZip !== 'undefined') {
+      pending++;
+      JSZip.loadAsync(f).then(function(zip) {
+        var xmlNames = Object.keys(zip.files).filter(function(n) { return n.toLowerCase().endsWith('.xml'); });
+        var zp = xmlNames.length;
+        if (!zp) { pending--; if (pending === 0) { xmlRenderBuffer(); } return; }
+        xmlNames.forEach(function(name) {
+          zip.files[name].async('string').then(function(txt) {
+            var cfdi = xmlParseCfdi(txt, name);
+            if (cfdi) { cfdi.xmlContent = txt; xmlState.buffer.push(cfdi); }
+            zp--;
+            if (zp === 0) { pending--; if (pending === 0) { xmlRenderBuffer(); } }
+          });
+        });
+      }).catch(function() { pending--; if (pending === 0) { xmlRenderBuffer(); } });
+    }
+  });
+  if (pending === 0) { xmlRenderBuffer(); }
+}
+
+function xmlParseCfdi(xmlText, filename) {
+  try {
+    var parser = new DOMParser();
+    var doc    = parser.parseFromString(xmlText, 'application/xml');
+    var NS3    = 'http://www.sat.gob.mx/cfd/3';
+    var NS4    = 'http://www.sat.gob.mx/cfd/4';
+    var NSTFD  = 'http://www.sat.gob.mx/TimbreFiscalDigital';
+    var comp = doc.getElementsByTagNameNS(NS4, 'Comprobante')[0] || doc.getElementsByTagNameNS(NS3, 'Comprobante')[0];
+    if (!comp) return null;
+    var emisor   = comp.getElementsByTagNameNS(NS4, 'Emisor')[0]   || comp.getElementsByTagNameNS(NS3, 'Emisor')[0];
+    var receptor = comp.getElementsByTagNameNS(NS4, 'Receptor')[0] || comp.getElementsByTagNameNS(NS3, 'Receptor')[0];
+    var tfd = doc.getElementsByTagNameNS(NSTFD, 'TimbreFiscalDigital')[0];
+    return {
+      filename:      filename,
+      version:       comp.getAttribute('Version')           || '3.3',
+      fecha:         comp.getAttribute('Fecha')             || '',
+      subtotal:      parseFloat(comp.getAttribute('SubTotal')   || '0'),
+      descuento:     parseFloat(comp.getAttribute('Descuento')  || '0'),
+      total:         parseFloat(comp.getAttribute('Total')      || '0'),
+      moneda:        comp.getAttribute('Moneda')            || 'MXN',
+      tipo:          comp.getAttribute('TipoDeComprobante') || '',
+      metodoPago:    comp.getAttribute('MetodoPago')        || '',
+      formaPago:     comp.getAttribute('FormaPago')         || '',
+      rfcEmisor:     emisor   ? (emisor.getAttribute('Rfc')       || '') : '',
+      nombreEmisor:  emisor   ? (emisor.getAttribute('Nombre')    || '') : '',
+      rfcReceptor:   receptor ? (receptor.getAttribute('Rfc')     || '') : '',
+      nombreReceptor:receptor ? (receptor.getAttribute('Nombre')  || '') : '',
+      usoCfdi:       receptor ? (receptor.getAttribute('UsoCFDI') || '') : '',
+      uuid:          tfd ? tfd.getAttribute('UUID')          : null,
+      fechaTimbrado: tfd ? tfd.getAttribute('FechaTimbrado') : null,
+      xmlContent:    null
+    };
+  } catch(e) { console.error('xmlParseCfdi:', filename, e); return null; }
+}
+
+function xmlRenderBuffer() {
+  var cont = document.getElementById('xmlBufferCont');
+  var btnG = document.getElementById('xmlBtnGuardar');
+  if (!cont || !btnG) return;
+  if (!xmlState.buffer.length) {
+    cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">No se encontraron CFDIs validos.</p>';
+    btnG.style.display = 'none';
+    return;
+  }
+  var TL = { I: 'Ingreso', E: 'Egreso', P: 'Pago', N: 'Nomina', T: 'Traslado' };
+  var rows = '';
+  xmlState.buffer.forEach(function(c) {
+    var uuid  = c.uuid ? c.uuid.slice(0, 8) + '...' : '(sin UUID)';
+    var tipo  = TL[c.tipo] || c.tipo || '\u2014';
+    var fecha = c.fecha ? c.fecha.slice(0, 10) : '\u2014';
+    var total = new Intl.NumberFormat('es-MX', { style: 'currency', currency: c.moneda || 'MXN' }).format(c.total);
+    rows += '<tr>'
+      + '<td style="font-family:monospace;font-size:11px" title="' + (c.uuid || '') + '">' + uuid + '</td>'
+      + '<td>' + tipo + '</td>'
+      + '<td>' + fecha + '</td>'
+      + '<td style="font-size:12px">' + c.rfcEmisor + '</td>'
+      + '<td style="font-size:12px">' + c.rfcReceptor + '</td>'
+      + '<td style="text-align:right;font-weight:500">' + total + '</td>'
+      + '<td>' + c.moneda + '</td>'
+      + '<td style="font-size:11px;color:var(--muted)">' + c.filename.slice(0, 30) + '</td>'
+      + '</tr>';
+  });
+  cont.innerHTML = '<p style="font-size:13px;color:var(--success);margin:0 0 10px">'
+    + '&#9989; ' + xmlState.buffer.length + ' CFDI(s) detectados. Revisa y confirma.</p>'
+    + '<table class="xml-table"><thead><tr>'
+    + '<th>UUID</th><th>Tipo</th><th>Fecha</th><th>RFC Emisor</th><th>RFC Receptor</th>'
+    + '<th style="text-align:right">Total</th><th>Moneda</th><th>Archivo</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>';
+  if (!puede('write')) {
+    cont.innerHTML += '<p class="xml-hint" style="color:var(--danger)">Solo lectura \u2014 sin permiso para guardar.</p>';
+    btnG.style.display = 'none';
+  } else {
+    btnG.style.display = 'inline-flex';
+  }
+}
+
+window.xmlGuardarLote = async function xmlGuardarLote() {
+  if (!puede('write'))         { alert('Sin permiso de escritura.'); return; }
+  if (!xmlState.empresaId)     { alert('Selecciona una empresa.'); return; }
+  if (!xmlState.buffer.length) { alert('No hay CFDIs en cola.'); return; }
+  var btnG = document.getElementById('xmlBtnGuardar');
+  btnG.disabled = true;
+  btnG.textContent = 'Guardando...';
+  try {
+    var ins = {
+      empresa_id:    xmlState.empresaId,
+      tipo_lote:     xmlState.buffer.length === 1 ? 'xml' : 'batch',
+      num_cfdis:     xmlState.buffer.length,
+      status:        'procesado',
+      usuario_cargo: currentUserRow ? currentUserRow.username : 'unknown'
+    };
+    if (xmlState.terceroId) { ins.tercero_id = xmlState.terceroId; }
+    var loteRes = await sb.from('cont_xml_lotes').insert(ins).select().single();
+    if (loteRes.error) { throw loteRes.error; }
+    var lote = loteRes.data;
+    var errores = 0;
+    for (var i = 0; i < xmlState.buffer.length; i++) {
+      var c    = xmlState.buffer[i];
+      var slug = (c.uuid || c.filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+      var path = xmlState.empresaId + '/' + lote.id + '/' + slug + '.xml';
+      if (c.xmlContent) {
+        var upRes = await sb.storage.from('cont-xml').upload(
+          path, new Blob([c.xmlContent], { type: 'application/xml' }), { upsert: true }
+        );
+        if (upRes.error) { console.warn('Storage warn:', path, upRes.error.message); }
+      }
+      var rec = {
+        lote_id: lote.id, empresa_id: xmlState.empresaId,
+        uuid_cfdi: c.uuid || null, version_cfdi: c.version || '3.3',
+        fecha_emision: c.fecha || null, fecha_timbrado: c.fechaTimbrado || null,
+        tipo_cfdi: c.tipo || null,
+        rfc_emisor: c.rfcEmisor || null, nombre_emisor: c.nombreEmisor || null,
+        rfc_receptor: c.rfcReceptor || null, nombre_receptor: c.nombreReceptor || null,
+        uso_cfdi: c.usoCfdi || null, metodo_pago: c.metodoPago || null, forma_pago: c.formaPago || null,
+        subtotal: c.subtotal, descuento: c.descuento, total: c.total, moneda: c.moneda || 'MXN',
+        storage_path: path, nombre_archivo: c.filename, status: 'importado',
+        usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+      };
+      var cfdiRes = await sb.from('cont_xml_cfdis').insert(rec);
+      if (cfdiRes.error) { console.error('CFDI insert error:', cfdiRes.error.message); errores++; }
+    }
+    var msg = '&#9989; Lote #' + lote.id + ' guardado \u2014 ' + (lote.num_cfdis - errores) + ' CFDI(s) registrados.';
+    if (errores) { msg += ' &#9888; ' + errores + ' error(es) \u2014 revisa consola.'; }
+    xmlState.buffer = [];
+    document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">' + msg + '</p>';
+    btnG.style.display = 'none';
+    xmlLoadLotes();
+  } catch(e) {
+    alert('Error guardando lote: ' + e.message);
+  } finally {
+    btnG.disabled = false;
+    btnG.innerHTML = '\U0001f4be <span>Guardar en SIF</span>';
+  }
+};
 
 // ==================== Auto-updater (cero-caché) ====================
 async function checkForUpdates() {
