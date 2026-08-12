@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.7';
+const APP_VERSION = '2026.08.12.8';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -1493,12 +1493,14 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
     var errores = 0;
     for (var i = 0; i < xmlState.buffer.length; i++) {
       var c   = xmlState.buffer[i];
+      var fechaVal = (c.fecha && String(c.fecha).trim() !== '') ? c.fecha : null;
+      var tipoVal  = (c.tipo && String(c.tipo).trim() !== '' && c.tipo !== 'CFDI') ? c.tipo : null;
       var rec = {
         lote_id:        lote.id,
         empresa_id:     xmlState.empresaId || null,
         uuid_cfdi:      c.uuid       || null,
-        fecha_emision:  c.fecha      || null,
-        tipo_cfdi:      c.tipo       || null,
+        fecha_emision:  fechaVal,
+        tipo_cfdi:      tipoVal,
         rfc_emisor:     c.rfcEmisor  || null,
         nombre_emisor:  c.nombreEmisor || null,
         rfc_receptor:   c.rfcReceptor || null,
@@ -1513,9 +1515,18 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
         usuario_creo:   currentUserRow ? currentUserRow.username : 'unknown'
       };
       var cfdiRes = await sb.from('cont_xml_cfdis').insert(rec);
-      if (cfdiRes.error) { console.error('CFDI insert:', cfdiRes.error.message); errores++; }
+      if (cfdiRes.error) { console.error('CFDI insert:', cfdiRes.error.message); errores++; window.__lastCfdiError = cfdiRes.error.message; }
     }
-    var msg = '✅ Lote #' + lote.id + ' guardado — ' + (xmlState.buffer.length - errores) + ' CFDI(s) registrados.';
+    var guardados = xmlState.buffer.length - errores;
+    if (guardados === 0) {
+      // Todos fallaron: borrar el lote huérfano y avisar el error real
+      await sb.from('cont_xml_lotes').delete().eq('id', lote.id);
+      alert('❌ No se guardó ningún CFDI. Error: ' + (window.__lastCfdiError || 'desconocido'));
+      btnG.disabled = false;
+      btnG.innerHTML = '💾 <span>Guardar en SIF</span>';
+      return;
+    }
+    var msg = '✅ Lote #' + lote.id + ' guardado — ' + guardados + ' CFDI(s) registrados.';
     if (errores) { msg += ' ⚠ ' + errores + ' error(es) — revisa consola.'; }
     xmlState.buffer = [];
     document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">' + msg + '</p>';
