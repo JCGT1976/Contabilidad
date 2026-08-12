@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.2';
+const APP_VERSION = '2026.08.12.3';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -954,8 +954,20 @@ async function generarPolizasDesdeXML() {
     // Obtener código de empresa
     let optSelected = empSel.options[empSel.selectedIndex];
     let empCodigo = optSelected.dataset.codigo;
+    let empNombre = optSelected.textContent.trim();
     let xmlRes = await sb.from('cont_xml_cfdis').select('*').eq('empresa_nombre', empCodigo).eq('status', 'importado').limit(500);
     if (xmlRes.error) throw xmlRes.error;
+    if (!xmlRes.data || xmlRes.data.length === 0) {
+      // Fallback: buscar como persona física (tercero) con nombre similar
+      let terRes = await sb.from('cont_terceros').select('id').ilike('nombre', '%' + empNombre + '%');
+      if (!terRes.error && terRes.data && terRes.data.length > 0) {
+        let terIds = terRes.data.map(function(t){ return t.id; });
+        let xmlRes2 = await sb.from('cont_xml_cfdis').select('*').in('tercero_id', terIds).eq('status', 'importado').limit(500);
+        if (!xmlRes2.error && xmlRes2.data && xmlRes2.data.length > 0) {
+          xmlRes.data = xmlRes2.data;
+        }
+      }
+    }
     if (!xmlRes.data || xmlRes.data.length === 0) {
       alert('No hay XMLs sin procesar');
       btn.disabled = false;
