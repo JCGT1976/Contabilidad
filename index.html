@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.1';
+const APP_VERSION = '2026.08.12.2';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -641,7 +641,7 @@ window.onEmpresaPolizaChange = async function onEmpresaPolizaChange(empId) {
 
 window.recargarCatalogosRenglones = async function recargarCatalogosRenglones(empId) {
   if (!empId) return;
-  var res = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', parseInt(empId)).eq('activa', true).order('codigo', {ascending:true});
+  var res = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', parseInt(empId)).order('codigo', {ascending:true});
   if (res.error || !res.data) return;
   var opts = '<option value="">Selecciona cuenta...</option>';
   res.data.forEach(function(ct) {
