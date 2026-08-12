@@ -783,7 +783,7 @@ async function cargarEmpresasEnSelectores() {
   
   let html = '<option value="">Selecciona empresa...</option>';
   empRes.data.forEach(e => {
-    html += '<option value="' + e.codigo + '">' + e.nombre_corto + '</option>';
+    html += '<option value="' + e.id + '" data-codigo="' + e.codigo + '">' + e.nombre_corto + '</option>';
   });
   
   // Actualizar selector en lista
@@ -883,7 +883,10 @@ async function generarPolizasDesdeXML() {
     let periodoId = perRes.data.id;
     
     // Obtener XMLs sin procesar
-    let xmlRes = await sb.from('cont_xml_cfdis').select('*').eq('empresa_nombre', empSel.value || 'UNKNOWN').eq('status', 'importado').limit(500);
+    // Obtener código de empresa
+    let optSelected = empSel.options[empSel.selectedIndex];
+    let empCodigo = optSelected.dataset.codigo;
+    let xmlRes = await sb.from('cont_xml_cfdis').select('*').eq('empresa_nombre', empCodigo).eq('status', 'importado').limit(500);
     if (xmlRes.error) throw xmlRes.error;
     if (!xmlRes.data || xmlRes.data.length === 0) {
       alert('No hay XMLs sin procesar');
