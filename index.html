@@ -10,6 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📒</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --brand: #002855;
@@ -374,17 +375,14 @@
           <select id="xmlEmpresaSel" onchange="xmlOnEmpresaChange(this.value)">
             <option value="">— Empresa —</option>
           </select>
-          <select id="xmlTerceroSel" onchange="xmlOnTerceroChange(this.value)">
-            <option value="">— Tercero (opcional) —</option>
-          </select>
         </div>
 
         <div id="xmlDropZone" class="xml-drop-zone">
-          <div class="drop-icon">📄</div>
-          <p style="margin:8px 0 4px;font-weight:500" data-i18n="xml_drop_title">Arrastra XML o ZIP aquí</p>
-          <p style="margin:0;font-size:13px;color:var(--muted)" data-i18n="xml_drop_hint">o haz clic para seleccionar</p>
+          <div class="drop-icon">📊</div>
+          <p style="margin:8px 0 4px;font-weight:500" data-i18n="xml_drop_title">Arrastra el Excel de CFDIs aquí</p>
+          <p style="margin:0;font-size:13px;color:var(--muted)" data-i18n="xml_drop_hint">o haz clic para seleccionar (.xlsx)</p>
         </div>
-        <input type="file" id="xmlFileInput" multiple accept=".xml,.zip" style="display:none">
+        <input type="file" id="xmlFileInput" accept=".xlsx" style="display:none">
 
         <div id="xmlBufferCont"></div>
         <div style="margin-top:14px">
@@ -413,7 +411,7 @@
   </main>
 
   <div class="version-footer">
-    SIF-Contabilidad <span id="versionLabel">v2026.08.11.1</span> · MI Global
+    SIF-Contabilidad <span id="versionLabel">v2026.08.12.1</span> · MI Global
   </div>
 
 </div>
@@ -425,7 +423,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.11.1';
+const APP_VERSION = '2026.08.12.1';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -469,9 +467,9 @@ const I18N = {
     wip_polizas: 'Próximamente: captura, import desde ContPAQ i, XML SAT bajo requerimiento.',
     tab_xml: '📄 XML / CFDIs',
     xml_title: '📄 Contabilizador XML / CFDIs',
-    xml_sub: 'Carga masiva de CFDIs (XML o ZIP). Fase 1: importación y almacenamiento.',
-    xml_drop_title: 'Arrastra XML o ZIP aquí',
-    xml_drop_hint: 'o haz clic para seleccionar',
+    xml_sub: 'Carga tu Excel de CFDIs. Fase 1: importación y almacenamiento.',
+    xml_drop_title: 'Arrastra el Excel de CFDIs aquí',
+    xml_drop_hint: 'o haz clic para seleccionar (.xlsx)',
     xml_save_btn: 'Guardar en SIF',
     xml_hist_title: '📋 Historial de Lotes',
     xml_sel_empresa: 'Selecciona una empresa para ver el historial.',
@@ -712,13 +710,12 @@ function aplicarRBAC() {
 
 // ==================== XML / CFDIs (Fase 1) ====================
 
-var xmlState = { empresaId: null, terceroId: null, lotes: [], buffer: [] };
+var xmlState = { empresaNombre: null, isPF: false, pfId: null, lotes: [], buffer: [] };
 var xmlInited = false;
 
 window.initXmlTab = function initXmlTab() {
   if (!xmlInited) { xmlSetupDropZone(); xmlInited = true; }
   xmlLoadEmpresas();
-  xmlLoadTerceros();
   xmlLoadLotes();
 };
 
@@ -726,50 +723,48 @@ async function xmlLoadEmpresas() {
   var sel = document.getElementById('xmlEmpresaSel');
   if (!sel) return;
   var saved = sel.value;
-  var res = await sb.from('cont_empresas').select('id,nombre_corto').eq('activa', true).order('orden_presentacion');
-  if (res.error || !res.data) return;
-  sel.innerHTML = '<option value="">\u2014 Empresa \u2014</option>';
-  res.data.forEach(function(e) {
-    sel.innerHTML += '<option value="' + e.id + '">' + e.nombre_corto + '</option>';
+  var GRUPO = ['Ariitranst','Autobot','Boughts','Comercial','Internacional'];
+  sel.innerHTML = '<option value="">\u2014 Empresa / Entidad \u2014</option>';
+  GRUPO.forEach(function(n) {
+    sel.innerHTML += '<option value="e:' + n + '">' + n + '</option>';
   });
-  if (saved) { sel.value = saved; }
-}
-
-async function xmlLoadTerceros() {
-  var sel = document.getElementById('xmlTerceroSel');
-  if (!sel) return;
-  var saved = sel.value;
-  var res = await sb.from('cont_terceros').select('id,nombre,rfc,tipo').eq('activo', true).order('nombre');
-  if (res.error || !res.data) return;
-  sel.innerHTML = '<option value="">\u2014 Tercero (opcional) \u2014</option>';
-  res.data.forEach(function(t) {
-    sel.innerHTML += '<option value="' + t.id + '">[' + t.tipo + '] ' + t.nombre + ' &middot; ' + t.rfc + '</option>';
-  });
+  var res = await sb.from('cont_terceros').select('id,nombre,rfc,tipo').eq('activo', true).eq('tipo', 'PF').order('nombre');
+  if (!res.error && res.data && res.data.length) {
+    sel.innerHTML += '<option value="" disabled>\u2500\u2500 Personas F\u00edsicas \u2500\u2500</option>';
+    res.data.forEach(function(t) {
+      sel.innerHTML += '<option value="pf:' + t.id + '">[PF] ' + t.nombre + ' \u00b7 ' + t.rfc + '</option>';
+    });
+  }
   if (saved) { sel.value = saved; }
 }
 
 window.xmlOnEmpresaChange = function xmlOnEmpresaChange(val) {
-  xmlState.empresaId = val ? parseInt(val, 10) : null;
+  if (!val) {
+    xmlState.empresaNombre = null; xmlState.isPF = false; xmlState.pfId = null;
+  } else if (val.slice(0,3) === 'pf:') {
+    xmlState.empresaNombre = null; xmlState.isPF = true; xmlState.pfId = parseInt(val.slice(3), 10);
+  } else {
+    xmlState.empresaNombre = val.slice(2); xmlState.isPF = false; xmlState.pfId = null;
+  }
   xmlLoadLotes();
 };
 
-window.xmlOnTerceroChange = function xmlOnTerceroChange(val) {
-  xmlState.terceroId = val ? parseInt(val, 10) : null;
-};
 
 async function xmlLoadLotes() {
   var cont = document.getElementById('xmlLotesCont');
   if (!cont) return;
-  if (!xmlState.empresaId) {
+  if (!xmlState.empresaNombre && !xmlState.pfId) {
     cont.innerHTML = '<p class="xml-hint">Selecciona una empresa para ver el historial.</p>';
     return;
   }
   cont.innerHTML = '<p class="xml-hint">Cargando...</p>';
-  var res = await sb.from('cont_xml_lotes')
-    .select('id,tipo_lote,num_cfdis,status,fecha_carga,usuario_cargo,cont_terceros(nombre,rfc)')
-    .eq('empresa_id', xmlState.empresaId)
+  var q = sb.from('cont_xml_lotes')
+    .select('id,tipo_lote,num_cfdis,status,fecha_carga,usuario_cargo,empresa_nombre,cont_terceros(nombre,rfc)')
     .order('fecha_carga', { ascending: false })
     .limit(50);
+  if (xmlState.isPF) { q = q.eq('tercero_id', xmlState.pfId); }
+  else { q = q.eq('empresa_nombre', xmlState.empresaNombre); }
+  var res = await q;
   if (res.error) {
     cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">Error: ' + res.error.message + '</p>';
     return;
@@ -784,7 +779,7 @@ function xmlRenderLotes() {
   if (!xmlState.lotes.length) { cont.innerHTML = '<p class="xml-hint">Sin lotes cargados aun.</p>'; return; }
   var rows = '';
   xmlState.lotes.forEach(function(l) {
-    var tercero = l.cont_terceros ? l.cont_terceros.nombre + ' - ' + l.cont_terceros.rfc : '\u2014';
+    var tercero = l.cont_terceros ? l.cont_terceros.nombre + ' · ' + l.cont_terceros.rfc : (l.empresa_nombre || '—');
     var sc = l.status === 'procesado' ? 'badge-ok' : l.status === 'contabilizado' ? 'badge-info' : l.status === 'error' ? 'badge-err' : 'badge-warn';
     var fecha = l.fecha_carga ? l.fecha_carga.slice(0, 16).replace('T', ' ') : '\u2014';
     rows += '<tr>'
@@ -849,90 +844,76 @@ function xmlSetupDropZone() {
   if (!zone || !inp) return;
   zone.addEventListener('dragover',  function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', function()  { zone.classList.remove('drag-over'); });
-  zone.addEventListener('drop',      function(e) { e.preventDefault(); zone.classList.remove('drag-over'); xmlHandleFiles(e.dataTransfer.files); });
-  zone.addEventListener('click',     function()  { inp.click(); });
-  inp.addEventListener('change',     function()  { xmlHandleFiles(inp.files); inp.value = ''; });
-}
-
-function xmlHandleFiles(files) {
-  if (!xmlState.empresaId) { alert('Selecciona una empresa antes de cargar archivos.'); return; }
-  xmlState.buffer = [];
-  document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">Procesando archivos...</p>';
-  document.getElementById('xmlBtnGuardar').style.display = 'none';
-  var pending = 0;
-  Array.from(files).forEach(function(f) {
-    var ext = f.name.split('.').pop().toLowerCase();
-    if (ext === 'xml') {
-      pending++;
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var cfdi = xmlParseCfdi(e.target.result, f.name);
-        if (cfdi) { cfdi.xmlContent = e.target.result; xmlState.buffer.push(cfdi); }
-        pending--;
-        if (pending === 0) { xmlRenderBuffer(); }
-      };
-      reader.readAsText(f, 'UTF-8');
-    } else if (ext === 'zip' && typeof JSZip !== 'undefined') {
-      pending++;
-      JSZip.loadAsync(f).then(function(zip) {
-        var xmlNames = Object.keys(zip.files).filter(function(n) { return n.toLowerCase().endsWith('.xml'); });
-        var zp = xmlNames.length;
-        if (!zp) { pending--; if (pending === 0) { xmlRenderBuffer(); } return; }
-        xmlNames.forEach(function(name) {
-          zip.files[name].async('string').then(function(txt) {
-            var cfdi = xmlParseCfdi(txt, name);
-            if (cfdi) { cfdi.xmlContent = txt; xmlState.buffer.push(cfdi); }
-            zp--;
-            if (zp === 0) { pending--; if (pending === 0) { xmlRenderBuffer(); } }
-          });
-        });
-      }).catch(function() { pending--; if (pending === 0) { xmlRenderBuffer(); } });
-    }
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) { xmlHandleExcel(e.dataTransfer.files[0]); }
   });
-  if (pending === 0) { xmlRenderBuffer(); }
+  zone.addEventListener('click', function() { inp.click(); });
+  inp.addEventListener('change', function() { if (inp.files.length) { xmlHandleExcel(inp.files[0]); inp.value = ''; } });
 }
 
-function xmlParseCfdi(xmlText, filename) {
-  try {
-    var parser = new DOMParser();
-    var doc    = parser.parseFromString(xmlText, 'application/xml');
-    var NS3    = 'http://www.sat.gob.mx/cfd/3';
-    var NS4    = 'http://www.sat.gob.mx/cfd/4';
-    var NSTFD  = 'http://www.sat.gob.mx/TimbreFiscalDigital';
-    var comp = doc.getElementsByTagNameNS(NS4, 'Comprobante')[0] || doc.getElementsByTagNameNS(NS3, 'Comprobante')[0];
-    if (!comp) return null;
-    var emisor   = comp.getElementsByTagNameNS(NS4, 'Emisor')[0]   || comp.getElementsByTagNameNS(NS3, 'Emisor')[0];
-    var receptor = comp.getElementsByTagNameNS(NS4, 'Receptor')[0] || comp.getElementsByTagNameNS(NS3, 'Receptor')[0];
-    var tfd = doc.getElementsByTagNameNS(NSTFD, 'TimbreFiscalDigital')[0];
-    return {
-      filename:      filename,
-      version:       comp.getAttribute('Version')           || '3.3',
-      fecha:         comp.getAttribute('Fecha')             || '',
-      subtotal:      parseFloat(comp.getAttribute('SubTotal')   || '0'),
-      descuento:     parseFloat(comp.getAttribute('Descuento')  || '0'),
-      total:         parseFloat(comp.getAttribute('Total')      || '0'),
-      moneda:        comp.getAttribute('Moneda')            || 'MXN',
-      tipo:          comp.getAttribute('TipoDeComprobante') || '',
-      metodoPago:    comp.getAttribute('MetodoPago')        || '',
-      formaPago:     comp.getAttribute('FormaPago')         || '',
-      rfcEmisor:     emisor   ? (emisor.getAttribute('Rfc')       || '') : '',
-      nombreEmisor:  emisor   ? (emisor.getAttribute('Nombre')    || '') : '',
-      rfcReceptor:   receptor ? (receptor.getAttribute('Rfc')     || '') : '',
-      nombreReceptor:receptor ? (receptor.getAttribute('Nombre')  || '') : '',
-      usoCfdi:       receptor ? (receptor.getAttribute('UsoCFDI') || '') : '',
-      uuid:          tfd ? tfd.getAttribute('UUID')          : null,
-      fechaTimbrado: tfd ? tfd.getAttribute('FechaTimbrado') : null,
-      xmlContent:    null
-    };
-  } catch(e) { console.error('xmlParseCfdi:', filename, e); return null; }
+function xmlHandleExcel(file) {
+  if (!xmlState.empresaNombre && !xmlState.pfId) {
+    alert('Selecciona una empresa o persona física antes de cargar el archivo.');
+    return;
+  }
+  xmlState.buffer = [];
+  document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">Procesando Excel...</p>';
+  document.getElementById('xmlBtnGuardar').style.display = 'none';
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      if (typeof XLSX === 'undefined') { throw new Error('SheetJS no cargado'); }
+      var wb   = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) {
+        document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint" style="color:var(--danger)">El Excel no tiene filas de datos.</p>';
+        return;
+      }
+      function norm(s) { return String(s).toLowerCase().replace(/[\s_\-.]/g, ''); }
+      rows.forEach(function(row) {
+        var k = {};
+        Object.keys(row).forEach(function(h) { k[norm(h)] = row[h]; });
+        var uuid  = String(k['uuid'] || k['foliofiscal'] || k['uuidcfdi'] || '').trim();
+        var tipo  = String(k['tipo'] || k['tipocomprobante'] || '').trim().toUpperCase();
+        var fecha = k['fecha'] || k['fechaemision'] || '';
+        if (fecha instanceof Date) { fecha = fecha.toISOString().slice(0,10); }
+        else { fecha = String(fecha).slice(0,10); }
+        var rfcEm = String(k['rfcemisor']    || k['emisorrfc']    || '').trim().toUpperCase();
+        var nomEm = String(k['nombreemisor'] || k['emisornombre'] || k['emisor'] || '').trim();
+        var rfcRe = String(k['rfcreceptor']    || k['receptorrfc']    || '').trim().toUpperCase();
+        var nomRe = String(k['nombrereceptor'] || k['receptornombre'] || k['receptor'] || '').trim();
+        var subtot = parseFloat(k['subtotal'] || 0) || 0;
+        var total  = parseFloat(k['total']    || 0) || 0;
+        var moneda = String(k['moneda'] || 'MXN').trim().toUpperCase() || 'MXN';
+        var mPago  = String(k['metodopago']  || '').trim();
+        var fPago  = String(k['formapago']   || '').trim();
+        var iva    = parseFloat(k['iva'] || k['totaliva'] || 0) || 0;
+        if (!uuid && !rfcEm && !total) { return; }
+        xmlState.buffer.push({
+          uuid: uuid, tipo: tipo, fecha: fecha,
+          rfcEmisor: rfcEm, nombreEmisor: nomEm,
+          rfcReceptor: rfcRe, nombreReceptor: nomRe,
+          subtotal: subtot, total: total, moneda: moneda,
+          metodoPago: mPago, formaPago: fPago, totalIva: iva
+        });
+      });
+      xmlRenderBuffer();
+    } catch(e) {
+      document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint" style="color:var(--danger)">Error leyendo Excel: ' + e.message + '</p>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
+
 
 function xmlRenderBuffer() {
   var cont = document.getElementById('xmlBufferCont');
   var btnG = document.getElementById('xmlBtnGuardar');
   if (!cont || !btnG) return;
   if (!xmlState.buffer.length) {
-    cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">No se encontraron CFDIs validos.</p>';
+    cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">No se encontraron registros válidos en el Excel.</p>';
     btnG.style.display = 'none';
     return;
   }
@@ -940,8 +921,8 @@ function xmlRenderBuffer() {
   var rows = '';
   xmlState.buffer.forEach(function(c) {
     var uuid  = c.uuid ? c.uuid.slice(0, 8) + '...' : '(sin UUID)';
-    var tipo  = TL[c.tipo] || c.tipo || '\u2014';
-    var fecha = c.fecha ? c.fecha.slice(0, 10) : '\u2014';
+    var tipo  = TL[c.tipo] || c.tipo || '—';
+    var fecha = c.fecha || '—';
     var total = new Intl.NumberFormat('es-MX', { style: 'currency', currency: c.moneda || 'MXN' }).format(c.total);
     rows += '<tr>'
       + '<td style="font-family:monospace;font-size:11px" title="' + (c.uuid || '') + '">' + uuid + '</td>'
@@ -951,14 +932,13 @@ function xmlRenderBuffer() {
       + '<td style="font-size:12px">' + c.rfcReceptor + '</td>'
       + '<td style="text-align:right;font-weight:500">' + total + '</td>'
       + '<td>' + c.moneda + '</td>'
-      + '<td style="font-size:11px;color:var(--muted)">' + c.filename.slice(0, 30) + '</td>'
       + '</tr>';
   });
   cont.innerHTML = '<p style="font-size:13px;color:var(--success);margin:0 0 10px">'
     + '&#9989; ' + xmlState.buffer.length + ' CFDI(s) detectados. Revisa y confirma.</p>'
     + '<table class="xml-table"><thead><tr>'
     + '<th>UUID</th><th>Tipo</th><th>Fecha</th><th>RFC Emisor</th><th>RFC Receptor</th>'
-    + '<th style="text-align:right">Total</th><th>Moneda</th><th>Archivo</th>'
+    + '<th style="text-align:right">Total</th><th>Moneda</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>';
   if (!puede('write')) {
     cont.innerHTML += '<p class="xml-hint" style="color:var(--danger)">Solo lectura \u2014 sin permiso para guardar.</p>';
@@ -969,52 +949,52 @@ function xmlRenderBuffer() {
 }
 
 window.xmlGuardarLote = async function xmlGuardarLote() {
-  if (!puede('write'))         { alert('Sin permiso de escritura.'); return; }
-  if (!xmlState.empresaId)     { alert('Selecciona una empresa.'); return; }
+  if (!puede('write')) { alert('Sin permiso de escritura.'); return; }
+  if (!xmlState.empresaNombre && !xmlState.pfId) { alert('Selecciona una empresa o persona física.'); return; }
   if (!xmlState.buffer.length) { alert('No hay CFDIs en cola.'); return; }
   var btnG = document.getElementById('xmlBtnGuardar');
   btnG.disabled = true;
   btnG.textContent = 'Guardando...';
   try {
     var ins = {
-      empresa_id:    xmlState.empresaId,
-      tipo_lote:     xmlState.buffer.length === 1 ? 'xml' : 'batch',
+      tipo_lote:     'excel',
       num_cfdis:     xmlState.buffer.length,
       status:        'procesado',
       usuario_cargo: currentUserRow ? currentUserRow.username : 'unknown'
     };
-    if (xmlState.terceroId) { ins.tercero_id = xmlState.terceroId; }
+    if (xmlState.empresaNombre) { ins.empresa_nombre = xmlState.empresaNombre; }
+    if (xmlState.pfId)          { ins.tercero_id     = xmlState.pfId; }
     var loteRes = await sb.from('cont_xml_lotes').insert(ins).select().single();
     if (loteRes.error) { throw loteRes.error; }
-    var lote = loteRes.data;
+    var lote    = loteRes.data;
     var errores = 0;
     for (var i = 0; i < xmlState.buffer.length; i++) {
-      var c    = xmlState.buffer[i];
-      var slug = (c.uuid || c.filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
-      var path = xmlState.empresaId + '/' + lote.id + '/' + slug + '.xml';
-      if (c.xmlContent) {
-        var upRes = await sb.storage.from('cont-xml').upload(
-          path, new Blob([c.xmlContent], { type: 'application/xml' }), { upsert: true }
-        );
-        if (upRes.error) { console.warn('Storage warn:', path, upRes.error.message); }
-      }
+      var c   = xmlState.buffer[i];
       var rec = {
-        lote_id: lote.id, empresa_id: xmlState.empresaId,
-        uuid_cfdi: c.uuid || null, version_cfdi: c.version || '3.3',
-        fecha_emision: c.fecha || null, fecha_timbrado: c.fechaTimbrado || null,
-        tipo_cfdi: c.tipo || null,
-        rfc_emisor: c.rfcEmisor || null, nombre_emisor: c.nombreEmisor || null,
-        rfc_receptor: c.rfcReceptor || null, nombre_receptor: c.nombreReceptor || null,
-        uso_cfdi: c.usoCfdi || null, metodo_pago: c.metodoPago || null, forma_pago: c.formaPago || null,
-        subtotal: c.subtotal, descuento: c.descuento, total: c.total, moneda: c.moneda || 'MXN',
-        storage_path: path, nombre_archivo: c.filename, status: 'importado',
-        usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+        lote_id:        lote.id,
+        uuid_cfdi:      c.uuid       || null,
+        fecha_emision:  c.fecha      || null,
+        tipo_cfdi:      c.tipo       || null,
+        rfc_emisor:     c.rfcEmisor  || null,
+        nombre_emisor:  c.nombreEmisor || null,
+        rfc_receptor:   c.rfcReceptor || null,
+        nombre_receptor: c.nombreReceptor || null,
+        metodo_pago:    c.metodoPago || null,
+        forma_pago:     c.formaPago  || null,
+        subtotal:       c.subtotal,
+        total:          c.total,
+        moneda:         c.moneda || 'MXN',
+        total_iva:      c.totalIva   || 0,
+        empresa_nombre: xmlState.empresaNombre || null,
+        status:         'importado',
+        usuario_creo:   currentUserRow ? currentUserRow.username : 'unknown'
       };
+      if (xmlState.pfId) { rec.tercero_id = xmlState.pfId; }
       var cfdiRes = await sb.from('cont_xml_cfdis').insert(rec);
-      if (cfdiRes.error) { console.error('CFDI insert error:', cfdiRes.error.message); errores++; }
+      if (cfdiRes.error) { console.error('CFDI insert:', cfdiRes.error.message); errores++; }
     }
-    var msg = '&#9989; Lote #' + lote.id + ' guardado \u2014 ' + (lote.num_cfdis - errores) + ' CFDI(s) registrados.';
-    if (errores) { msg += ' &#9888; ' + errores + ' error(es) \u2014 revisa consola.'; }
+    var msg = '✅ Lote #' + lote.id + ' guardado — ' + (xmlState.buffer.length - errores) + ' CFDI(s) registrados.';
+    if (errores) { msg += ' ⚠ ' + errores + ' error(es) — revisa consola.'; }
     xmlState.buffer = [];
     document.getElementById('xmlBufferCont').innerHTML = '<p class="xml-hint">' + msg + '</p>';
     btnG.style.display = 'none';
@@ -1023,9 +1003,10 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
     alert('Error guardando lote: ' + e.message);
   } finally {
     btnG.disabled = false;
-    btnG.innerHTML = '\U0001f4be <span>Guardar en SIF</span>';
+    btnG.innerHTML = '💾 <span>Guardar en SIF</span>';
   }
 };
+
 
 // ==================== Auto-updater (cero-caché) ====================
 async function checkForUpdates() {
