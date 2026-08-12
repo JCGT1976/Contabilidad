@@ -108,6 +108,9 @@ CREATE INDEX IF NOT EXISTS idx_cont_balanzas_cuenta ON cont_balanzas(cuenta_id);
 -- ---------------------------------------------------------------------
 -- 5. Seed empresas MI Global (edita los datos según necesites)
 -- ---------------------------------------------------------------------
+-- Asegurar que AMIR existe
+DELETE FROM cont_empresas WHERE codigo = 'AMIR';
+
 INSERT INTO cont_empresas
   (codigo, nombre_corto, nombre_fiscal, rfc, giro, regimen_especial, moneda_funcional, orden_presentacion, color_hex)
 VALUES
