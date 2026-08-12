@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.6';
+const APP_VERSION = '2026.08.12.7';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -1495,6 +1495,7 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
       var c   = xmlState.buffer[i];
       var rec = {
         lote_id:        lote.id,
+        empresa_id:     xmlState.empresaId || null,
         uuid_cfdi:      c.uuid       || null,
         fecha_emision:  c.fecha      || null,
         tipo_cfdi:      c.tipo       || null,
@@ -1507,7 +1508,6 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
         subtotal:       c.subtotal,
         total:          c.total,
         moneda:         c.moneda || 'MXN',
-        total_iva:      c.totalIva   || 0,
         empresa_nombre: xmlState.empresaNombre || null,
         status:         'importado',
         usuario_creo:   currentUserRow ? currentUserRow.username : 'unknown'
