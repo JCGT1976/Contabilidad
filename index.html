@@ -714,18 +714,24 @@ document.getElementById('polizaForm').addEventListener('submit', async function(
   }
   let numPoliza = tipoPrefix + '-' + String(nextNum).padStart(3, '0');
   
-  // Obtener periodo_id
+  // Obtener periodo_id (auto-crear si no existe)
   let [anio, mes] = perStr.split('-');
   let perRes = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', parseInt(anio)).eq('mes', parseInt(mes)).single();
-  if (perRes.error) {
-    alert('Período no existe. Crea primero.');
-    return;
+  let periodoIdPol;
+  if (perRes.error || !perRes.data) {
+    let newPer = await sb.from('cont_periodos').insert({
+      empresa_id: empId, anio: parseInt(anio), mes: parseInt(mes), status: 'abierto'
+    }).select('id').single();
+    if (newPer.error) { alert('Error creando período: ' + newPer.error.message); return; }
+    periodoIdPol = newPer.data.id;
+  } else {
+    periodoIdPol = perRes.data.id;
   }
   
   // Insertar póliza
   let polizaRes = await sb.from('cont_polizas').insert({
     empresa_id: empId,
-    periodo_id: perRes.data.id,
+    periodo_id: periodoIdPol,
     numero_poliza: numPoliza,
     tipo_poliza: tipo,
     fecha_poliza: fecha,
@@ -876,11 +882,23 @@ async function generarPolizasDesdeXML() {
     let anio = ahora.getFullYear();
     let mes = ahora.getMonth() + 1;
     let perRes = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).single();
-    if (perRes.error) {
-      alert('Crea el período ' + anio + '-' + String(mes).padStart(2, '0') + ' primero');
-      return;
+    let periodoId;
+    if (perRes.error || !perRes.data) {
+      // Auto-crear período si no existe
+      let newPer = await sb.from('cont_periodos').insert({
+        empresa_id: empId,
+        anio: anio,
+        mes: mes,
+        status: 'abierto'
+      }).select('id').single();
+      if (newPer.error) {
+        alert('Error creando período: ' + newPer.error.message);
+        return;
+      }
+      periodoId = newPer.data.id;
+    } else {
+      periodoId = perRes.data.id;
     }
-    let periodoId = perRes.data.id;
     
     // Obtener XMLs sin procesar
     // Obtener código de empresa
