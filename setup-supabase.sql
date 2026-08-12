@@ -111,6 +111,8 @@ CREATE INDEX IF NOT EXISTS idx_cont_balanzas_cuenta ON cont_balanzas(cuenta_id);
 INSERT INTO cont_empresas
   (codigo, nombre_corto, nombre_fiscal, rfc, giro, regimen_especial, moneda_funcional, orden_presentacion, color_hex)
 VALUES
+  ('AMIR', 'Amir', 'Amir Tafreshi', 'XAXX010101000',
+   'Consultoría y servicios', 'Régimen General', 'MXN', 0, '#ff6b6b'),
   ('ARIITRANST', 'Ariitranst', 'Ariitranst (RAZÓN SOCIAL COMPLETA)', 'XAXX010101000',
    'Autotransporte federal de carga', 'SCT/SICT', 'MXN', 1, '#0057B8'),
   ('AUTOBOT', 'Autobot', 'Autobot (RAZÓN SOCIAL COMPLETA)', 'XAXX010101000',

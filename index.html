@@ -357,7 +357,8 @@
         <h2>📝 Pólizas Contables</h2>
         <p class="sub">Ingresos, Egresos, Diario con partida doble (NIF México 2026)</p>
         <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-          <button class="btn-accent" onclick="showPolizaNueva()" style="padding:10px 16px; border-radius:8px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">➕ Nueva Póliza</button>
+          <select id="polizaFiltroEmpresa" onchange="cargarListaPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; min-width:180px;"><option value="">Selecciona empresa...</option></select>
+          <button class="btn-accent" onclick="showPolizaNueva()" style="padding:10px 16px; border-radius:8px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">➕ Nueva Póliza</button><button class="btn-accent" onclick="generarPolizasDesdeXML()" style="padding:10px 16px; border-radius:8px; background:#10b981; color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">⚡ Generar desde XML</button>
           <select id="polizaFiltroTipo" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los tipos</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select>
           <select id="polizaFiltroStatus" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los status</option><option value="borrador">Borrador</option><option value="revisada">Revisada</option><option value="contabilizada">Contabilizada</option><option value="anulada">Anulada</option></select>
         </div>
@@ -557,6 +558,7 @@ document.querySelectorAll('.tab').forEach(function(tab) {
     document.querySelectorAll('.tab').forEach(function(t) { t.classList.toggle('active', t === tab); });
     document.querySelectorAll('.view').forEach(function(v) { v.classList.toggle('active', v.dataset.view === target); });
     if (target === 'xml') { initXmlTab(); }
+    if (target === 'polizas') { cargarEmpresasEnSelectores(); }
   });
 });
 
@@ -775,6 +777,24 @@ document.getElementById('polizaForm').addEventListener('submit', async function(
   cargarListaPolizas();
 });
 
+async function cargarEmpresasEnSelectores() {
+  let empRes = await sb.from('cont_empresas').select('*').eq('activa', true);
+  if (empRes.error || !empRes.data) return;
+  
+  let html = '<option value="">Selecciona empresa...</option>';
+  empRes.data.forEach(e => {
+    html += '<option value="' + e.codigo + '">' + e.nombre_corto + '</option>';
+  });
+  
+  // Actualizar selector en lista
+  let sel = document.getElementById('polizaFiltroEmpresa');
+  if (sel) sel.innerHTML = html;
+  
+  // Actualizar selector en modal
+  let selMod = document.getElementById('polizaEmpresa');
+  if (selMod) selMod.innerHTML = '<option value="">Selecciona...</option>' + html.substring(html.indexOf('<option value="') + 15);
+}
+
 async function cargarListaPolizas() {
   let empSel = document.getElementById('polizaFiltroEmpresa');
   if (!empSel) return;
@@ -830,6 +850,171 @@ async function verPoliza(polizaId) {
   let dRes = await sb.from('cont_polizas_detalles').select('*').eq('poliza_id', polizaId).order('renglon_num');
   
   alert('📝 Póliza: ' + p.numero_poliza + '\nFecha: ' + p.fecha_poliza + '\nTipo: ' + p.tipo_poliza + '\nStatus: ' + p.status + '\nDetalles: ' + (dRes.data ? dRes.data.length : 0) + ' renglones');
+}
+
+async function generarPolizasDesdeXML() {
+  if (!puede('write')) { alert('Sin permiso'); return; }
+  
+  let empSel = document.getElementById('polizaFiltroEmpresa') || document.getElementById('polizaEmpresa');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa primero'); return; }
+  
+  let empId = parseInt(empSel.value);
+  let btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Procesando...';
+  
+  try {
+    // Obtener catálogo de cuentas para la empresa
+    let catRes = await sb.from('cont_catalogo_cuentas').select('*').eq('empresa_id', empId);
+    if (catRes.error) throw catRes.error;
+    
+    let cuentasMap = {};
+    catRes.data.forEach(c => { cuentasMap[c.codigo] = c.id; });
+    
+    // Obtener período actual
+    let ahora = new Date();
+    let anio = ahora.getFullYear();
+    let mes = ahora.getMonth() + 1;
+    let perRes = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).single();
+    if (perRes.error) {
+      alert('Crea el período ' + anio + '-' + String(mes).padStart(2, '0') + ' primero');
+      return;
+    }
+    let periodoId = perRes.data.id;
+    
+    // Obtener XMLs sin procesar
+    let xmlRes = await sb.from('cont_xml_cfdis').select('*').eq('empresa_nombre', empSel.value || 'UNKNOWN').eq('status', 'importado').limit(500);
+    if (xmlRes.error) throw xmlRes.error;
+    if (!xmlRes.data || xmlRes.data.length === 0) {
+      alert('No hay XMLs sin procesar');
+      btn.disabled = false;
+      btn.textContent = '⚡ Generar desde XML';
+      return;
+    }
+    
+    let contador = 0;
+    let errores = [];
+    
+    // Procesar cada CFDI
+    for (let cfdi of xmlRes.data) {
+      try {
+        // Determinar tipo de póliza y cuentas
+        let tipoPol = 'Diario';
+        if (cfdi.tipo_cfdi === 'ingreso') tipoPol = 'Ingresos';
+        else if (cfdi.tipo_cfdi === 'egreso') tipoPol = 'Egresos';
+        
+        // Obtener número de póliza
+        let tipoPrefix = tipoPol === 'Ingresos' ? 'I' : (tipoPol === 'Egresos' ? 'E' : 'D');
+        let maxRes = await sb.from('cont_polizas').select('numero_poliza', { count: 'exact' }).eq('empresa_id', empId).eq('tipo_poliza', tipoPol).order('numero_poliza', { ascending: false }).limit(1);
+        let nextNum = 1;
+        if (maxRes.data && maxRes.data.length > 0) {
+          let lastNum = parseInt(maxRes.data[0].numero_poliza.split('-')[1]) || 0;
+          nextNum = lastNum + 1;
+        }
+        let numPoliza = tipoPrefix + '-' + String(nextNum).padStart(3, '0');
+        
+        // Crear póliza
+        let polizaRes = await sb.from('cont_polizas').insert({
+          empresa_id: empId,
+          periodo_id: periodoId,
+          numero_poliza: numPoliza,
+          tipo_poliza: tipoPol,
+          fecha_poliza: cfdi.fecha_emision || new Date().toISOString().split('T')[0],
+          concepto: 'CFDI ' + cfdi.uuid_cfdi + ' de ' + cfdi.nombre_emisor,
+          referencia_xml: cfdi.uuid_cfdi,
+          status: 'borrador',
+          usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+        }).select().single();
+        
+        if (polizaRes.error) {
+          errores.push('Póliza: ' + polizaRes.error.message);
+          continue;
+        }
+        
+        let polizaId = polizaRes.data.id;
+        
+        // Obtener cuentas (suponiendo 105-01-000 para clientes, 401-01-000 para ingresos)
+        let cuentaCli = cuentasMap['105-01-000'];
+        let cuentaIng = cuentasMap['401-01-000'];
+        let cuentaGas = cuentasMap['501-01-000'];
+        let cuentaProv = cuentasMap['201-01-000'];
+        
+        let detalles = [];
+        
+        if (tipoPol === 'Ingresos' && cuentaCli && cuentaIng) {
+          detalles.push({
+            poliza_id: polizaId,
+            renglon_num: 1,
+            cuenta_id: cuentaCli,
+            concepto_detalle: cfdi.nombre_emisor,
+            debe: cfdi.total,
+            haber: 0,
+            moneda: cfdi.moneda || 'MXN',
+            referencia_cfdi: cfdi.uuid_cfdi,
+            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+          });
+          detalles.push({
+            poliza_id: polizaId,
+            renglon_num: 2,
+            cuenta_id: cuentaIng,
+            concepto_detalle: 'Ingresos por venta',
+            debe: 0,
+            haber: cfdi.total,
+            moneda: cfdi.moneda || 'MXN',
+            referencia_cfdi: cfdi.uuid_cfdi,
+            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+          });
+        } else if (tipoPol === 'Egresos' && cuentaProv && cuentaGas) {
+          detalles.push({
+            poliza_id: polizaId,
+            renglon_num: 1,
+            cuenta_id: cuentaGas,
+            concepto_detalle: cfdi.nombre_emisor,
+            debe: cfdi.total,
+            haber: 0,
+            moneda: cfdi.moneda || 'MXN',
+            referencia_cfdi: cfdi.uuid_cfdi,
+            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+          });
+          detalles.push({
+            poliza_id: polizaId,
+            renglon_num: 2,
+            cuenta_id: cuentaProv,
+            concepto_detalle: 'Cuentas por pagar',
+            debe: 0,
+            haber: cfdi.total,
+            moneda: cfdi.moneda || 'MXN',
+            referencia_cfdi: cfdi.uuid_cfdi,
+            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
+          });
+        }
+        
+        if (detalles.length > 0) {
+          let detRes = await sb.from('cont_polizas_detalles').insert(detalles);
+          if (detRes.error) {
+            errores.push('Detalles: ' + detRes.error.message);
+          } else {
+            contador++;
+            // Marcar CFDI como procesado
+            await sb.from('cont_xml_cfdis').update({ status: 'procesado' }).eq('id', cfdi.id);
+          }
+        }
+      } catch(e) {
+        errores.push(e.message);
+      }
+    }
+    
+    let msg = '✅ ' + contador + ' pólizas generadas de ' + xmlRes.data.length + ' XMLs';
+    if (errores.length) msg += '\n⚠ ' + errores.length + ' errores';
+    alert(msg);
+    cargarListaPolizas();
+    
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Generar desde XML';
+  }
 }
 
 async function bootstrapAuth() {
