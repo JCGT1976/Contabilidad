@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.3';
+const APP_VERSION = '2026.08.12.5';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -950,23 +950,13 @@ async function generarPolizasDesdeXML() {
       periodoId = perRes.data.id;
     }
     
-    // Obtener XMLs sin procesar
-    // Obtener código de empresa
-    let optSelected = empSel.options[empSel.selectedIndex];
-    let empCodigo = optSelected.dataset.codigo;
-    let empNombre = optSelected.textContent.trim();
-    let xmlRes = await sb.from('cont_xml_cfdis').select('*').eq('empresa_nombre', empCodigo).eq('status', 'importado').limit(500);
-    if (xmlRes.error) throw xmlRes.error;
-    if (!xmlRes.data || xmlRes.data.length === 0) {
-      // Fallback: buscar como persona física (tercero) con nombre similar
-      let terRes = await sb.from('cont_terceros').select('id').ilike('nombre', '%' + empNombre + '%');
-      if (!terRes.error && terRes.data && terRes.data.length > 0) {
-        let terIds = terRes.data.map(function(t){ return t.id; });
-        let xmlRes2 = await sb.from('cont_xml_cfdis').select('*').in('tercero_id', terIds).eq('status', 'importado').limit(500);
-        if (!xmlRes2.error && xmlRes2.data && xmlRes2.data.length > 0) {
-          xmlRes.data = xmlRes2.data;
-        }
-      }
+    // Obtener XMLs sin procesar de los lotes de esta empresa
+    let lotesRes = await sb.from('cont_xml_lotes').select('id').eq('empresa_id', empId);
+    let xmlRes = { data: [], error: null };
+    if (!lotesRes.error && lotesRes.data && lotesRes.data.length > 0) {
+      let loteIds = lotesRes.data.map(function(l){ return l.id; });
+      xmlRes = await sb.from('cont_xml_cfdis').select('*').in('lote_id', loteIds).eq('status', 'importado').limit(500);
+      if (xmlRes.error) throw xmlRes.error;
     }
     if (!xmlRes.data || xmlRes.data.length === 0) {
       alert('No hay XMLs sin procesar');
@@ -1229,7 +1219,7 @@ function aplicarRBAC() {
 
 // ==================== XML / CFDIs (Fase 1) ====================
 
-var xmlState = { empresaNombre: null, isPF: false, pfId: null, lotes: [], buffer: [] };
+var xmlState = { empresaId: null, empresaNombre: null, lotes: [], buffer: [] };
 var xmlInited = false;
 
 window.initXmlTab = function initXmlTab() {
@@ -1242,28 +1232,24 @@ async function xmlLoadEmpresas() {
   var sel = document.getElementById('xmlEmpresaSel');
   if (!sel) return;
   var saved = sel.value;
-  var GRUPO = ['Ariitranst','Autobot','Boughts','Comercial','Internacional'];
   sel.innerHTML = '<option value="">\u2014 Empresa / Entidad \u2014</option>';
-  GRUPO.forEach(function(n) {
-    sel.innerHTML += '<option value="e:' + n + '">' + n + '</option>';
-  });
-  var res = await sb.from('cont_terceros').select('id,nombre,rfc,tipo').eq('activo', true).eq('tipo', 'PF').order('nombre');
-  if (!res.error && res.data && res.data.length) {
-    sel.innerHTML += '<option value="" disabled>\u2500\u2500 Personas F\u00edsicas \u2500\u2500</option>';
-    res.data.forEach(function(t) {
-      sel.innerHTML += '<option value="pf:' + t.id + '">[PF] ' + t.nombre + ' \u00b7 ' + t.rfc + '</option>';
+  var res = await sb.from('cont_empresas').select('id,nombre_corto,codigo').order('nombre_corto', {ascending:true});
+  if (!res.error && res.data) {
+    res.data.forEach(function(e) {
+      sel.innerHTML += '<option value="' + e.id + '" data-codigo="' + e.codigo + '">' + e.nombre_corto + '</option>';
     });
   }
   if (saved) { sel.value = saved; }
 }
 
 window.xmlOnEmpresaChange = function xmlOnEmpresaChange(val) {
+  var sel = document.getElementById('xmlEmpresaSel');
   if (!val) {
-    xmlState.empresaNombre = null; xmlState.isPF = false; xmlState.pfId = null;
-  } else if (val.slice(0,3) === 'pf:') {
-    xmlState.empresaNombre = null; xmlState.isPF = true; xmlState.pfId = parseInt(val.slice(3), 10);
+    xmlState.empresaId = null; xmlState.empresaNombre = null;
   } else {
-    xmlState.empresaNombre = val.slice(2); xmlState.isPF = false; xmlState.pfId = null;
+    xmlState.empresaId = parseInt(val, 10);
+    var opt = sel.options[sel.selectedIndex];
+    xmlState.empresaNombre = opt ? (opt.dataset.codigo || opt.textContent.trim()) : null;
   }
   xmlLoadLotes();
 };
@@ -1272,17 +1258,16 @@ window.xmlOnEmpresaChange = function xmlOnEmpresaChange(val) {
 async function xmlLoadLotes() {
   var cont = document.getElementById('xmlLotesCont');
   if (!cont) return;
-  if (!xmlState.empresaNombre && !xmlState.pfId) {
+  if (!xmlState.empresaId) {
     cont.innerHTML = '<p class="xml-hint">Selecciona una empresa para ver el historial.</p>';
     return;
   }
   cont.innerHTML = '<p class="xml-hint">Cargando...</p>';
   var q = sb.from('cont_xml_lotes')
-    .select('id,tipo_lote,num_cfdis,status,fecha_carga,usuario_cargo,empresa_nombre,cont_terceros(nombre,rfc)')
+    .select('id,tipo_lote,num_cfdis,status,fecha_carga,usuario_cargo,empresa_nombre,empresa_id')
     .order('fecha_carga', { ascending: false })
     .limit(50);
-  if (xmlState.isPF) { q = q.eq('tercero_id', xmlState.pfId); }
-  else { q = q.eq('empresa_nombre', xmlState.empresaNombre); }
+  q = q.eq('empresa_id', xmlState.empresaId);
   var res = await q;
   if (res.error) {
     cont.innerHTML = '<p class="xml-hint" style="color:var(--danger)">Error: ' + res.error.message + '</p>';
@@ -1298,7 +1283,7 @@ function xmlRenderLotes() {
   if (!xmlState.lotes.length) { cont.innerHTML = '<p class="xml-hint">Sin lotes cargados aun.</p>'; return; }
   var rows = '';
   xmlState.lotes.forEach(function(l) {
-    var tercero = l.cont_terceros ? l.cont_terceros.nombre + ' · ' + l.cont_terceros.rfc : (l.empresa_nombre || '—');
+    var tercero = l.empresa_nombre || '—';
     var sc = l.status === 'procesado' ? 'badge-ok' : l.status === 'contabilizado' ? 'badge-info' : l.status === 'error' ? 'badge-err' : 'badge-warn';
     var fecha = l.fecha_carga ? l.fecha_carga.slice(0, 16).replace('T', ' ') : '\u2014';
     rows += '<tr>'
@@ -1372,7 +1357,7 @@ function xmlSetupDropZone() {
 }
 
 function xmlHandleExcel(file) {
-  if (!xmlState.empresaNombre && !xmlState.pfId) {
+  if (!xmlState.empresaId) {
     alert('Selecciona una empresa o persona física antes de cargar el archivo.');
     return;
   }
@@ -1488,7 +1473,7 @@ function xmlRenderBuffer() {
 
 window.xmlGuardarLote = async function xmlGuardarLote() {
   if (!puede('write')) { alert('Sin permiso de escritura.'); return; }
-  if (!xmlState.empresaNombre && !xmlState.pfId) { alert('Selecciona una empresa o persona física.'); return; }
+  if (!xmlState.empresaId) { alert('Selecciona una empresa.'); return; }
   if (!xmlState.buffer.length) { alert('No hay CFDIs en cola.'); return; }
   var btnG = document.getElementById('xmlBtnGuardar');
   btnG.disabled = true;
@@ -1497,11 +1482,11 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
     var ins = {
       tipo_lote:     'xml',
       num_cfdis:     xmlState.buffer.length,
-      status:        'procesado',
+      status:        'importado',
       usuario_cargo: currentUserRow ? currentUserRow.username : 'unknown'
     };
+    if (xmlState.empresaId)     { ins.empresa_id     = xmlState.empresaId; }
     if (xmlState.empresaNombre) { ins.empresa_nombre = xmlState.empresaNombre; }
-    if (xmlState.pfId)          { ins.tercero_id     = xmlState.pfId; }
     var loteRes = await sb.from('cont_xml_lotes').insert(ins).select().single();
     if (loteRes.error) { throw loteRes.error; }
     var lote    = loteRes.data;
@@ -1527,7 +1512,6 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
         status:         'importado',
         usuario_creo:   currentUserRow ? currentUserRow.username : 'unknown'
       };
-      if (xmlState.pfId) { rec.tercero_id = xmlState.pfId; }
       var cfdiRes = await sb.from('cont_xml_cfdis').insert(rec);
       if (cfdiRes.error) { console.error('CFDI insert:', cfdiRes.error.message); errores++; }
     }
