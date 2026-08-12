@@ -365,7 +365,7 @@
         <div id="polizasListaCont" style="overflow-x:auto;"></div>
       </div>
       <div id="polizaModalNueva" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center;">
-        <div style="background:var(--panel); border-radius:16px; padding:28px; max-width:800px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow);"><h2 style="margin:0 0 4px 0; color:var(--brand);">📝 Nueva Póliza</h2><p style="color:var(--muted); font-size:13px; margin:0 0 20px 0;">Partida doble automática (Debe = Haber)</p><form id="polizaForm"><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;"><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Empresa</label><select id="polizaEmpresa" required onchange="cargarPeriodosPoliza(this.value)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Período</label><select id="polizaPeriodo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Tipo</label><select id="polizaTipo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Selecciona...</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Fecha</label><input id="polizaFecha" type="date" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></div></div><div style="margin-bottom:16px;"><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Concepto</label><input id="polizaConcepto" type="text" required placeholder="Descripción de la póliza" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px; box-sizing:border-box;"></div><div style="margin-bottom:16px; padding:14px; background:var(--bg); border-radius:8px;"><h3 style="margin:0 0 12px 0; font-size:14px; color:var(--brand);">Renglones (Partida Doble)</h3><div id="polizaRenglonesLista"></div><button type="button" onclick="agregarRenglon()" style="padding:8px 12px; background:var(--accent); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; margin-top:12px;">+ Agregar Renglón</button></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:14px; background:#f0f4f8; border-radius:8px; margin-bottom:16px; font-size:13px;"><div><strong>Total Debe:</strong> <span id="polizaTotalDebe" style="color:var(--success); font-weight:700;">0.00</span></div><div><strong>Total Haber:</strong> <span id="polizaTotalHaber" style="color:var(--danger); font-weight:700;">0.00</span></div><div style="grid-column:1/-1;"><strong>Diferencia:</strong> <span id="polizaDiferencia" style="font-weight:700;">0.00</span></div></div><div style="display:flex; gap:12px; justify-content:flex-end;"><button type="button" onclick="cerrarModalPoliza()" style="padding:10px 20px; border:1px solid var(--border); background:var(--panel); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">Cancelar</button><button type="submit" style="padding:10px 20px; background:var(--success); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">💾 Guardar Póliza</button></div></form></div>
+        <div style="background:var(--panel); border-radius:16px; padding:28px; max-width:800px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow);"><h2 style="margin:0 0 4px 0; color:var(--brand);">📝 Nueva Póliza</h2><p style="color:var(--muted); font-size:13px; margin:0 0 20px 0;">Partida doble automática (Debe = Haber)</p><form id="polizaForm"><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;"><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Empresa</label><select id="polizaEmpresa" required onchange="onEmpresaPolizaChange(this.value)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Período</label><select id="polizaPeriodo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Tipo</label><select id="polizaTipo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Selecciona...</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Fecha</label><input id="polizaFecha" type="date" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></div></div><div style="margin-bottom:16px;"><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Concepto</label><input id="polizaConcepto" type="text" required placeholder="Descripción de la póliza" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px; box-sizing:border-box;"></div><div style="margin-bottom:16px; padding:14px; background:var(--bg); border-radius:8px;"><h3 style="margin:0 0 12px 0; font-size:14px; color:var(--brand);">Renglones (Partida Doble)</h3><div id="polizaRenglonesLista"></div><button type="button" onclick="agregarRenglon()" style="padding:8px 12px; background:var(--accent); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; margin-top:12px;">+ Agregar Renglón</button></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:14px; background:#f0f4f8; border-radius:8px; margin-bottom:16px; font-size:13px;"><div><strong>Total Debe:</strong> <span id="polizaTotalDebe" style="color:var(--success); font-weight:700;">0.00</span></div><div><strong>Total Haber:</strong> <span id="polizaTotalHaber" style="color:var(--danger); font-weight:700;">0.00</span></div><div style="grid-column:1/-1;"><strong>Diferencia:</strong> <span id="polizaDiferencia" style="font-weight:700;">0.00</span></div></div><div style="display:flex; gap:12px; justify-content:flex-end;"><button type="button" onclick="cerrarModalPoliza()" style="padding:10px 20px; border:1px solid var(--border); background:var(--panel); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">Cancelar</button><button type="submit" style="padding:10px 20px; background:var(--success); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">💾 Guardar Póliza</button></div></form></div>
       </div>
     </div>
 
@@ -609,7 +609,7 @@ async function showPolizaNueva() {
   document.getElementById('polizaDiferencia').textContent = '0.00';
   
   // Cargar empresas
-  let empRes = await sb.from('cont_empresas').select('*').eq('activa', true);
+  let empRes = await sb.from('cont_empresas').select('*').order('nombre_corto', {ascending:true});
   let html = '<option value="">Selecciona...</option>';
   if (!empRes.error && empRes.data) {
     empRes.data.forEach(e => {
@@ -620,7 +620,7 @@ async function showPolizaNueva() {
   // Cargar períodos del primer empresa disponible
   if (empRes.data && empRes.data.length > 0) {
     document.getElementById('polizaEmpresa').value = empRes.data[0].id;
-    await cargarPeriodosPoliza(empRes.data[0].id);
+    await onEmpresaPolizaChange(empRes.data[0].id);
   }
   
   // Hoy como fecha default
@@ -633,6 +633,22 @@ async function showPolizaNueva() {
 function cerrarModalPoliza() {
   document.getElementById('polizaModalNueva').style.display = 'none';
 }
+
+window.onEmpresaPolizaChange = async function onEmpresaPolizaChange(empId) {
+  await cargarPeriodosPoliza(empId);
+  await recargarCatalogosRenglones(empId);
+};
+
+window.recargarCatalogosRenglones = async function recargarCatalogosRenglones(empId) {
+  if (!empId) return;
+  var res = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', parseInt(empId)).eq('activa', true).order('codigo', {ascending:true});
+  if (res.error || !res.data) return;
+  var opts = '<option value="">Selecciona cuenta...</option>';
+  res.data.forEach(function(ct) {
+    opts += '<option value="' + ct.id + '">' + ct.codigo + ' — ' + ct.nombre + '</option>';
+  });
+  document.querySelectorAll('.renglon-cuenta').forEach(function(sel) { sel.innerHTML = opts; });
+};
 
 window.cargarPeriodosPoliza = async function cargarPeriodosPoliza(empId) {
   var sel = document.getElementById('polizaPeriodo');
@@ -666,16 +682,18 @@ function agregarRenglon() {
   
   document.getElementById('polizaRenglonesLista').insertAdjacentHTML('beforeend', html);
   
-  // Cargar catálogo en el select
-  let empId = document.getElementById('polizaEmpresa').value;
-  if (empId) {
-    sb.from('cont_catalogo_cuentas').select('*').eq('empresa_id', parseInt(empId)).eq('activa', true).then(res => {
+  // Cargar catálogo en el select del nuevo renglón
+  var empId2 = document.getElementById('polizaEmpresa').value;
+  if (empId2) {
+    var myId = polizasState.renglon_counter;
+    sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', parseInt(empId2)).order('codigo', {ascending:true}).then(function(res) {
       if (!res.error && res.data) {
-        let opts = '<option>Selecciona cuenta...</option>';
-        res.data.forEach(c => {
-          opts += '<option value="' + c.id + '">' + c.codigo + ' - ' + c.nombre + '</option>';
+        var opts = '<option value="">Selecciona cuenta...</option>';
+        res.data.forEach(function(ct) {
+          opts += '<option value="' + ct.id + '">' + ct.codigo + ' — ' + ct.nombre + '</option>';
         });
-        document.querySelector('.renglon-cuenta[data-id="' + polizasState.renglon_counter + '"]').innerHTML = opts;
+        var sel = document.querySelector('.renglon-cuenta[data-id="' + myId + '"]');
+        if (sel) sel.innerHTML = opts;
       }
     });
   }
@@ -809,7 +827,7 @@ document.getElementById('polizaForm').addEventListener('submit', async function(
 });
 
 async function cargarEmpresasEnSelectores() {
-  let empRes = await sb.from('cont_empresas').select('*').eq('activa', true);
+  let empRes = await sb.from('cont_empresas').select('*').order('nombre_corto', {ascending:true});
   if (empRes.error || !empRes.data) return;
   
   let html = '<option value="">Selecciona empresa...</option>';
