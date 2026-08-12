@@ -430,7 +430,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.5';
+const APP_VERSION = '2026.08.12.6';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -1482,7 +1482,7 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
     var ins = {
       tipo_lote:     'xml',
       num_cfdis:     xmlState.buffer.length,
-      status:        'importado',
+      status:        'procesado',
       usuario_cargo: currentUserRow ? currentUserRow.username : 'unknown'
     };
     if (xmlState.empresaId)     { ins.empresa_id     = xmlState.empresaId; }
