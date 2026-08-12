@@ -957,7 +957,7 @@ window.xmlGuardarLote = async function xmlGuardarLote() {
   btnG.textContent = 'Guardando...';
   try {
     var ins = {
-      tipo_lote:     'excel',
+      tipo_lote:     'cfdi',
       num_cfdis:     xmlState.buffer.length,
       status:        'procesado',
       usuario_cargo: currentUserRow ? currentUserRow.username : 'unknown'
