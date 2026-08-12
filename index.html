@@ -763,7 +763,7 @@ document.getElementById('polizaForm').addEventListener('submit', async function(
   let periodoIdPol;
   if (perRes.error || !perRes.data) {
     let newPer = await sb.from('cont_periodos').insert({
-      empresa_id: empId, anio: parseInt(anio), mes: parseInt(mes), status: 'abierto'
+      empresa_id: empId, anio: parseInt(anio), mes: parseInt(mes)
     }).select('id').single();
     if (newPer.error) { alert('Error creando período: ' + newPer.error.message); return; }
     periodoIdPol = newPer.data.id;
@@ -939,8 +939,7 @@ async function generarPolizasDesdeXML() {
       let newPer = await sb.from('cont_periodos').insert({
         empresa_id: empId,
         anio: anio,
-        mes: mes,
-        status: 'abierto'
+        mes: mes
       }).select('id').single();
       if (newPer.error) {
         alert('Error creando período: ' + newPer.error.message);
