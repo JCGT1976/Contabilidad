@@ -275,180 +275,76 @@
   </header>
 
   <nav class="tabs">
-    <div class="tab active" data-tab="empresas" data-i18n="tab_empresas">🏢 Empresas</div>
-    <div class="tab" data-tab="catalogo" data-i18n="tab_catalogo">📚 Catálogo de Cuentas</div>
-    <div class="tab" data-tab="balanzas" data-i18n="tab_balanzas">⚖️ Balanzas</div>
-    <div class="tab" data-tab="estados" data-i18n="tab_estados">📊 Estados Financieros</div>
-    <div class="tab" data-tab="ratios" data-i18n="tab_ratios">📈 Ratios</div>
-    <div class="tab" data-tab="polizas" data-i18n="tab_polizas">📝 Pólizas</div>
-    <div class="tab" data-tab="xml" data-i18n="tab_xml">📄 XML / CFDIs</div>
-    <div class="tab" data-tab="amir" data-i18n="tab_amir">👤 Amir (PF)</div>
+    <div class="tab active" data-tab="amir">&#128100; Amir Tafreshi</div>
   </nav>
 
   <main>
 
-    <!-- Empresas -->
-    <div class="view active" data-view="empresas">
-      <div class="card">
-        <h2 data-i18n="empresas_title">🏢 Empresas del Grupo</h2>
-        <p class="sub" data-i18n="empresas_sub">Configuración fiscal y contable de las cinco empresas de MI Global.</p>
-        <div class="empty-state">
-          <div class="icon">🏗️</div>
-          <h3 data-i18n="wip_title">En construcción</h3>
-          <p data-i18n="wip_empresas">Próximamente: Ariitranst · Autobot · Boughts · Comercial · Internacional</p>
-        </div>
-      </div>
-    </div>
+    <div class="view active" data-view="amir">
 
-    <!-- Catálogo -->
-    <div class="view" data-view="catalogo">
-      <div class="card">
-        <h2 data-i18n="catalogo_title">📚 Catálogo de Cuentas</h2>
-        <p class="sub" data-i18n="catalogo_sub">Cuentas contables con código agrupador SAT (Anexo 24 RMF).</p>
-        <div class="empty-state">
-          <div class="icon">🏗️</div>
-          <h3 data-i18n="wip_title">En construcción</h3>
-          <p data-i18n="wip_catalogo">Próximamente: import desde ContPAQ i, edición, agrupador SAT.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Balanzas -->
-    <div class="view" data-view="balanzas">
-      <div class="card">
-        <h2>⚖️ Balanza de Comprobación</h2>
-        <p class="sub">Saldos iniciales, movimientos y saldos finales por empresa y período.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <select id="balanzaEmpresa" onchange="cargarPeriodosEn('balanzaPeriodo',this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
-            <option value="">— Empresa —</option>
-          </select>
-          <select id="balanzaPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
-            <option value="">— Período —</option>
-          </select>
-          <button onclick="calcularBalanza()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">⚡ Calcular Balanza</button>
-          <button onclick="exportarContPAQ()" style="padding:8px 16px;border:none;border-radius:8px;background:#10b981;color:#fff;cursor:pointer;font-weight:600;font-size:13px">📄 ContPAQ TXT</button>
-        </div>
-        <div id="balanzaCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa y período, luego calcula.</p></div>
-      </div>
-    </div>
-
-<!-- Estados Financieros -->
-    <div class="view" data-view="estados">
-      <div class="card">
-        <h2>📊 Estados Financieros</h2>
-        <p class="sub">ER · Estado de Posición Financiera · Estado de Flujo de Efectivo.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <select id="estadosEmpresa" onchange="cargarPeriodosEn('estadosPeriodo',this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
-            <option value="">— Empresa —</option>
-          </select>
-          <select id="estadosPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
-            <option value="">— Período —</option>
-          </select>
-          <button onclick="calcularEstados()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">📊 Generar Estados</button>
-        </div>
-        <div id="estadosCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa y período. Se requiere balanza calculada.</p></div>
-      </div>
-    </div>
-
-<!-- Ratios -->
-    <div class="view" data-view="ratios">
-      <div class="card">
-        <h2>📒 Auxiliar Libro Mayor — Esquema T</h2>
-        <p class="sub">Movimientos desglosados por cuenta contable en forma de T.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-          <select id="auxEmpresa" onchange="cargarPeriodosEn('auxPeriodo',this.value);auxCargarCuentas()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
-            <option value="">— Empresa —</option>
-          </select>
-          <select id="auxPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
-            <option value="">— Período —</option>
-          </select>
-          <select id="auxCuenta" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:200px">
-            <option value="">— Cuenta —</option>
-          </select>
-          <button onclick="verAuxiliarT()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">📒 Ver Auxiliar T</button>
-        </div>
-        <div id="auxCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa, período y cuenta.</p></div>
-      </div>
-    </div>
-
-<!-- Pólizas -->
-    <div class="view" data-view="polizas">
-      <div class="card">
-        <h2>📝 Pólizas Contables</h2>
-        <p class="sub">Ingresos, Egresos, Diario con partida doble (NIF México 2026)</p>
-        <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-          <select id="polizaFiltroEmpresa" onchange="cargarListaPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; min-width:180px;"><option value="">Selecciona empresa...</option></select>
-          <button class="btn-accent" onclick="showPolizaNueva()" style="padding:10px 16px; border-radius:8px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">➕ Nueva Póliza</button><input type="month" id="xmlGenPeriodo" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" title="Período de los XMLs a contabilizar"><input type="month" id="xmlGenPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" title="Período a contabilizar">
-          <input type="month" id="xmlGenPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" title="Período a contabilizar">
-          <button class="btn-accent" onclick="generarPolizasDesdeXML()" style="padding:10px 16px; border-radius:8px; background:#10b981; color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">⚡ Generar desde XML</button>
-          <select id="polizaFiltroTipo" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los tipos</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select>
-          <select id="polizaFiltroStatus" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los status</option><option value="borrador">Borrador</option><option value="revisada">Revisada</option><option value="contabilizada">Contabilizada</option><option value="anulada">Anulada</option></select>
-        </div>
-        <div id="polizasListaCont" style="overflow-x:auto;"></div>
-      </div>
-      <div id="polizaModalNueva" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center;">
-        <div style="background:var(--panel); border-radius:16px; padding:28px; max-width:800px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow);"><h2 style="margin:0 0 4px 0; color:var(--brand);">📝 Nueva Póliza</h2><p style="color:var(--muted); font-size:13px; margin:0 0 20px 0;">Partida doble automática (Debe = Haber)</p><form id="polizaForm"><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;"><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Empresa</label><select id="polizaEmpresa" required onchange="onEmpresaPolizaChange(this.value)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Período</label><select id="polizaPeriodo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Tipo</label><select id="polizaTipo" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Selecciona...</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select></div><div><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Fecha</label><input id="polizaFecha" type="date" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></div></div><div style="margin-bottom:16px;"><label style="font-size:12px; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">Concepto</label><input id="polizaConcepto" type="text" required placeholder="Descripción de la póliza" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-size:13px; box-sizing:border-box;"></div><div style="margin-bottom:16px; padding:14px; background:var(--bg); border-radius:8px;"><h3 style="margin:0 0 12px 0; font-size:14px; color:var(--brand);">Renglones (Partida Doble)</h3><div id="polizaRenglonesLista"></div><button type="button" onclick="agregarRenglon()" style="padding:8px 12px; background:var(--accent); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; margin-top:12px;">+ Agregar Renglón</button></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:14px; background:#f0f4f8; border-radius:8px; margin-bottom:16px; font-size:13px;"><div><strong>Total Debe:</strong> <span id="polizaTotalDebe" style="color:var(--success); font-weight:700;">0.00</span></div><div><strong>Total Haber:</strong> <span id="polizaTotalHaber" style="color:var(--danger); font-weight:700;">0.00</span></div><div style="grid-column:1/-1;"><strong>Diferencia:</strong> <span id="polizaDiferencia" style="font-weight:700;">0.00</span></div></div><div style="display:flex; gap:12px; justify-content:flex-end;"><button type="button" onclick="cerrarModalPoliza()" style="padding:10px 20px; border:1px solid var(--border); background:var(--panel); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">Cancelar</button><button type="submit" style="padding:10px 20px; background:var(--success); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">💾 Guardar Póliza</button></div></form></div>
-      </div>
-    </div>
-
-    <!-- XML / CFDIs (Fase 1) -->
-    <div class="view" data-view="xml">
-
-      <div class="card">
-        <h2 data-i18n="xml_title">📄 Contabilizador XML / CFDIs</h2>
-        <p class="sub" data-i18n="xml_sub">Carga masiva de CFDIs (XML o ZIP). Fase 1: importación y almacenamiento.</p>
-
-        <div class="xml-controls">
-          <select id="xmlEmpresaSel" onchange="xmlOnEmpresaChange(this.value)">
-            <option value="">— Empresa —</option>
-          </select>
-        </div>
-
-        <div id="xmlDropZone" class="xml-drop-zone">
-          <div class="drop-icon">📊</div>
-          <p style="margin:8px 0 4px;font-weight:500" data-i18n="xml_drop_title">Arrastra el Excel de CFDIs aquí</p>
-          <p style="margin:0;font-size:13px;color:var(--muted)" data-i18n="xml_drop_hint">o haz clic para seleccionar (.xlsx)</p>
-        </div>
-        <input type="file" id="xmlFileInput" accept=".xlsx" style="display:none">
-
-        <div id="xmlBufferCont"></div>
-        <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <label id="xmlPeriodoLabel" style="display:none;font-size:13px;font-weight:600;color:var(--text)">Período:</label>
-          <input type="month" id="xmlPeriodoInput" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" title="Mes/año al que pertenecen estos CFDIs">
-          <button id="xmlBtnGuardar" class="btn-primary" onclick="xmlGuardarLote()" style="display:none">
-            💾 <span data-i18n="xml_save_btn">Guardar en SIF</span>
-          </button>
+      <div class="card" style="margin-bottom:12px;padding:16px 24px;background:linear-gradient(135deg,#002855 0%,#185fa5 100%);border-radius:var(--radius)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:18px;font-weight:700;color:#fff">&#128100; Amir Tafreshi</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Persona Moral &middot; R&eacute;gimen General de Ley 601 &middot; empresa_id: 6</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <label style="font-size:12px;color:rgba(255,255,255,.8);font-weight:600">Per&iacute;odo:</label>
+            <input type="month" id="amirPeriodo" style="padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,.15);color:#fff;cursor:pointer" oninput="amirPeriodoChange()">
+            <span id="amirPeriodoLabel" style="font-size:12px;color:rgba(255,255,255,.6)"></span>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 style="font-size:16px" data-i18n="xml_hist_title">📋 Historial de Lotes</h2>
-        <div id="xmlLotesCont"><p class="xml-hint" data-i18n="xml_sel_empresa">Selecciona una empresa para ver el historial.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px">
+        <button onclick="amirToggleXML()" class="proc-btn" style="background:#0ea5e9"><span style="font-size:24px">&#128228;</span><span style="font-size:13px;font-weight:700">Cargar XMLs</span><span style="font-size:11px;opacity:.8">Paso 1</span></button>
+        <button onclick="amirGenerarPolizas()" class="proc-btn" id="btnPolizas" style="background:#7c3aed"><span style="font-size:24px">&#9889;</span><span style="font-size:13px;font-weight:700">Generar P&oacute;lizas</span><span style="font-size:11px;opacity:.8">Paso 2</span></button>
+        <button onclick="amirBalanza()" class="proc-btn" id="btnBalanza" style="background:#185fa5"><span style="font-size:24px">&#9878;&#65039;</span><span style="font-size:13px;font-weight:700">Balanza</span><span style="font-size:11px;opacity:.8">Paso 3</span></button>
+        <button onclick="amirEstados()" class="proc-btn" id="btnEstados" style="background:#059669"><span style="font-size:24px">&#128202;</span><span style="font-size:13px;font-weight:700">Estados Financieros</span><span style="font-size:11px;opacity:.8">Paso 4</span></button>
+        <button onclick="amirAuxiliar()" class="proc-btn" style="background:#b45309"><span style="font-size:24px">&#128209;</span><span style="font-size:13px;font-weight:700">Auxiliar T</span><span style="font-size:11px;opacity:.8">Libro Mayor</span></button>
+        <button onclick="amirContPAQ()" class="proc-btn" style="background:#dc2626"><span style="font-size:24px">&#128196;</span><span style="font-size:13px;font-weight:700">ContPAQ TXT</span><span style="font-size:11px;opacity:.8">Descargar</span></button>
       </div>
 
-      <div class="card" id="xmlLoteDetail" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <h2 style="font-size:16px;margin:0" data-i18n="xml_det_title">🔍 CFDIs del Lote</h2>
-          <button class="btn-sm" onclick="document.getElementById('xmlLoteDetail').style.display='none'">✕ Cerrar</button>
+      <div id="amirXMLPanel" style="display:none;margin-bottom:12px">
+        <div class="card" style="padding:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0;color:var(--brand)">&#128228; Carga de XMLs &mdash; Amir Tafreshi</h3>
+            <button onclick="amirToggleXML()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">&#10005;</button>
+          </div>
+          <div id="amirDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('amirFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="amirHandleDrop(event)">
+            <div style="font-size:32px;margin-bottom:8px">&#128193;</div>
+            <div style="font-weight:600;font-size:14px">Arrastra XMLs o ZIPs aqu&iacute;</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">o haz click para seleccionar</div>
+          </div>
+          <input type="file" id="amirFileInput" multiple accept=".xml,.zip" style="display:none" onchange="amirHandleFiles(this.files)">
+          <div id="amirXMLBuffer" style="margin-top:12px"></div>
+          <div style="margin-top:12px">
+            <button id="amirGuardarBtn" onclick="amirGuardarLote()" style="display:none;padding:10px 20px;border:none;border-radius:8px;background:#185fa5;color:#fff;font-weight:700;cursor:pointer">&#128190; Guardar Lote</button>
+          </div>
+          <div id="amirLotesHist" style="margin-top:16px"></div>
         </div>
-        <div id="xmlCfdisCont"></div>
+      </div>
+
+      <div id="amirResultados" style="display:none">
+        <div style="display:flex;gap:4px;margin-bottom:0;flex-wrap:wrap">
+          <button id="stab-polizas" onclick="amirSubTab('polizas')" style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;background:var(--brand);color:#fff">&#128221; P&oacute;lizas</button>
+          <button id="stab-balanza" onclick="amirSubTab('balanza')" style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;background:var(--bg);color:var(--text)">&#9878;&#65039; Balanza</button>
+          <button id="stab-estados" onclick="amirSubTab('estados')" style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;background:var(--bg);color:var(--text)">&#128202; Estados</button>
+          <button id="stab-auxiliar" onclick="amirSubTab('auxiliar')" style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;background:var(--bg);color:var(--text)">&#128209; Auxiliar T</button>
+        </div>
+        <div id="subpanel-polizas" class="card" style="margin:0;border-radius:0 8px 8px 8px"><div id="amirPolizasCont"><p style="color:var(--muted);font-size:13px">Genera p&oacute;lizas primero.</p></div></div>
+        <div id="subpanel-balanza" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px"><div id="amirBalanzaCont"><p style="color:var(--muted);font-size:13px">Calcula la balanza primero.</p></div></div>
+        <div id="subpanel-estados" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px"><div id="amirEstadosCont"><p style="color:var(--muted);font-size:13px">Genera estados primero.</p></div></div>
+        <div id="subpanel-auxiliar" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <select id="amirAuxCuenta" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:220px"><option value="">&mdash; Selecciona cuenta &mdash;</option></select>
+            <button onclick="amirVerAuxiliar()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer">&#128209; Ver Auxiliar T</button>
+          </div>
+          <div id="amirAuxCont"><p style="color:var(--muted);font-size:13px">Selecciona una cuenta.</p></div>
+        </div>
       </div>
 
     </div>
-
-    <!-- Amir (Persona Física) -->
-    <div class="view" data-view="amir">
-      <div class="card">
-        <h2 data-i18n="amir_title">👤 Contabilidad: Amir (Persona Física)</h2>
-        <p class="sub" data-i18n="amir_sub">Módulo contable exclusivo para Amir Tafreshi con catálogo de 1,080 cuentas.</p>
-        <iframe 
-          src="https://jcgt1976.github.io/Amir/index.html" 
-          style="width:100%;height:calc(100vh - 300px);border:none;border-radius:var(--radius);margin-top:14px;"
-          title="SIF Amir - Contabilidad PF">
-        </iframe>
-      </div>
-    </div>
-
 
   </main>
 
@@ -1818,6 +1714,389 @@ setInterval(checkForUpdates, 5 * 60 * 1000); // cada 5 min
 
 // ==================== Init ====================
 bootstrapAuth();
+
+// ═══════════════════════════════════════════════════════════════
+// AMIR — Panel de Control (empresa_id = 6)
+// ═══════════════════════════════════════════════════════════════
+
+var AMIR_ID = 6;
+var _amirXMLbuffer = [];
+
+function amirPeriodoChange() {
+  var v = document.getElementById('amirPeriodo').value;
+  var MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  if (v) { var p = v.split('-'); document.getElementById('amirPeriodoLabel').textContent = MESES[parseInt(p[1])] + ' ' + p[0]; }
+}
+function amirGetPeriodo() {
+  var v = document.getElementById('amirPeriodo').value;
+  if (!v) { alert('Selecciona el per\u00edodo primero'); return null; }
+  var p = v.split('-'); return { anio: parseInt(p[0]), mes: parseInt(p[1]) };
+}
+function amirToggleXML() {
+  var panel = document.getElementById('amirXMLPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') amirCargarLotes();
+}
+function amirSubTab(tab) {
+  ['polizas','balanza','estados','auxiliar'].forEach(function(t) {
+    document.getElementById('subpanel-' + t).style.display = t === tab ? 'block' : 'none';
+    var btn = document.getElementById('stab-' + t);
+    if (btn) { btn.style.background = t === tab ? 'var(--brand)' : 'var(--bg)'; btn.style.color = t === tab ? '#fff' : 'var(--text)'; }
+  });
+}
+function amirShowResultados(tab) {
+  document.getElementById('amirResultados').style.display = 'block';
+  amirSubTab(tab);
+}
+function amirHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('amirDropZone').style.borderColor = 'var(--border)';
+  amirHandleFiles(e.dataTransfer.files);
+}
+async function amirHandleFiles(files) {
+  if (!files || !files.length) return;
+  var per = amirGetPeriodo(); if (!per) return;
+  _amirXMLbuffer = [];
+  var buf = document.getElementById('amirXMLBuffer');
+  buf.innerHTML = '<p style="color:var(--muted);font-size:13px">Procesando...</p>';
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i], name = file.name.toLowerCase();
+    if (name.endsWith('.xml')) {
+      var text = await file.text();
+      var parsed = amirParseXML(text, file.name);
+      if (parsed) _amirXMLbuffer.push(parsed);
+    } else if (name.endsWith('.zip')) {
+      try {
+        var ab = await file.arrayBuffer();
+        var zip = await JSZip.loadAsync(ab);
+        var xmlFiles = Object.keys(zip.files).filter(function(n){ return n.toLowerCase().endsWith('.xml'); });
+        for (var j = 0; j < xmlFiles.length; j++) {
+          var text2 = await zip.files[xmlFiles[j]].async('string');
+          var p2 = amirParseXML(text2, xmlFiles[j]);
+          if (p2) _amirXMLbuffer.push(p2);
+        }
+      } catch(ex) { console.error('ZIP error', ex); }
+    }
+  }
+  renderAmirBuffer(buf);
+}
+function amirParseXML(text, fname) {
+  try {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(text, 'text/xml');
+    var ns = 'http://www.sat.gob.mx/cfd/4';
+    var nsTFD = 'http://www.sat.gob.mx/TimbreFiscalDigital';
+    var cfdi = doc.getElementsByTagNameNS(ns, 'Comprobante')[0];
+    if (!cfdi) return null;
+    var tfd = doc.getElementsByTagNameNS(nsTFD, 'TimbreFiscalDigital')[0];
+    var uuid = tfd ? tfd.getAttribute('UUID') : fname;
+    var emisor = doc.getElementsByTagNameNS(ns, 'Emisor')[0] || {};
+    var receptor = doc.getElementsByTagNameNS(ns, 'Receptor')[0] || {};
+    var tipo = (cfdi.getAttribute('TipoDeComprobante') || 'I').toLowerCase();
+    var tipoMap = { i:'ingreso', e:'egreso', t:'traslado', n:'nomina', p:'pago' };
+    var ivaTotal = 0;
+    var traslados = doc.getElementsByTagNameNS(ns, 'Traslado');
+    for (var k = 0; k < traslados.length; k++) {
+      ivaTotal += parseFloat(traslados[k].getAttribute('Importe') || 0);
+    }
+    return {
+      uuid_cfdi: uuid, tipo_cfdi: tipoMap[tipo] || 'ingreso',
+      fecha_emision: (cfdi.getAttribute('Fecha') || '').slice(0, 10),
+      rfc_emisor: (emisor.getAttribute ? emisor.getAttribute('Rfc') : '') || '',
+      nombre_emisor: (emisor.getAttribute ? emisor.getAttribute('Nombre') : '') || '',
+      rfc_receptor: (receptor.getAttribute ? receptor.getAttribute('Rfc') : '') || '',
+      nombre_receptor: (receptor.getAttribute ? receptor.getAttribute('Nombre') : '') || '',
+      subtotal: parseFloat(cfdi.getAttribute('SubTotal')) || 0,
+      total: parseFloat(cfdi.getAttribute('Total')) || 0,
+      iva_traslado: ivaTotal, moneda: cfdi.getAttribute('Moneda') || 'MXN',
+      status: 'importado'
+    };
+  } catch(ex) { console.error('Parse error', fname, ex); return null; }
+}
+function renderAmirBuffer(buf) {
+  if (!_amirXMLbuffer.length) { buf.innerHTML = '<p style="color:#a32d2d">No se encontraron CFDIs.</p>'; return; }
+  var html = '<p style="font-size:13px;color:#1d6f42;font-weight:600">' + _amirXMLbuffer.length + ' CFDIs listos</p>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--brand);color:#fff"><th style="padding:5px 8px">Tipo</th><th style="padding:5px 8px">Fecha</th><th style="padding:5px 8px">Emisor</th><th style="padding:5px 8px">UUID</th><th style="padding:5px 8px;text-align:right">Total</th></tr></thead><tbody>';
+  _amirXMLbuffer.forEach(function(x, i) {
+    html += '<tr style="background:' + (i%2?'var(--bg)':'var(--panel)') + '"><td style="padding:4px 8px">' + x.tipo_cfdi + '</td><td style="padding:4px 8px">' + x.fecha_emision + '</td><td style="padding:4px 8px">' + (x.nombre_emisor||'').slice(0,28) + '</td><td style="padding:4px 8px;font-family:monospace;font-size:10px">' + (x.uuid_cfdi||'').slice(0,16) + '...</td><td style="padding:4px 8px;text-align:right">' + fmt(x.total) + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  buf.innerHTML = html;
+  document.getElementById('amirGuardarBtn').style.display = 'inline-block';
+}
+async function amirGuardarLote() {
+  if (!_amirXMLbuffer.length) return;
+  var per = amirGetPeriodo(); if (!per) return;
+  var btn = document.getElementById('amirGuardarBtn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    var MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var periodoId = await ctGetOrCreatePeriodo(AMIR_ID, per.anio, per.mes);
+    var loteR = await sb.from('cont_xml_lotes').insert({
+      empresa_id: AMIR_ID, empresa_nombre: 'Amir Tafreshi', tipo_lote: 'xml',
+      periodo: per.anio + '-' + String(per.mes).padStart(2,'0'),
+      descripcion: 'CFDIs ' + MESES[per.mes] + ' ' + per.anio,
+      total_documentos: _amirXMLbuffer.length, status: 'completado',
+      usuario_creo: currentUserRow ? currentUserRow.username : 'sif'
+    }).select('id').single();
+    if (loteR.error) throw loteR.error;
+    var loteId = loteR.data.id;
+    var payload = _amirXMLbuffer.map(function(x){ return Object.assign({}, x, {lote_id: loteId}); });
+    for (var i = 0; i < payload.length; i += 50) {
+      var ins = await sb.from('cont_xml_cfdis').insert(payload.slice(i, i+50));
+      if (ins.error) throw ins.error;
+    }
+    alert('\u2705 ' + _amirXMLbuffer.length + ' CFDIs guardados');
+    _amirXMLbuffer = [];
+    document.getElementById('amirXMLBuffer').innerHTML = '';
+    btn.style.display = 'none';
+    amirCargarLotes();
+  } catch(ex) { alert('Error: ' + ex.message); }
+  finally { btn.disabled = false; btn.textContent = '\ud83d\udcbe Guardar Lote'; }
+}
+window.amirGuardarLote = amirGuardarLote;
+async function amirCargarLotes() {
+  var cont = document.getElementById('amirLotesHist'); if (!cont) return;
+  var r = await sb.from('cont_xml_lotes').select('id,periodo,descripcion,total_documentos,status').eq('empresa_id',AMIR_ID).order('id',{ascending:false}).limit(10);
+  if (r.error||!r.data||!r.data.length) { cont.innerHTML='<p style="font-size:12px;color:var(--muted)">Sin lotes previos.</p>'; return; }
+  var html='<h4 style="margin:0 0 6px 0;font-size:13px">Historial</h4><table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>';
+  r.data.forEach(function(l,i){ html+='<tr style="background:'+(i%2?'var(--bg)':'var(--panel)')+'"><td style="padding:4px 8px">'+(l.periodo||'')+'</td><td style="padding:4px 8px">'+(l.descripcion||'')+'</td><td style="padding:4px 8px;text-align:right">'+(l.total_documentos||0)+' docs</td><td style="padding:4px 8px">'+(l.status||'')+'</td></tr>'; });
+  html+='</tbody></table>';
+  cont.innerHTML=html;
+}
+async function amirGenerarPolizas() {
+  var per = amirGetPeriodo(); if (!per) return;
+  var btn = document.getElementById('btnPolizas');
+  var orig = btn.innerHTML; btn.style.opacity='.6'; btn.disabled=true;
+  try {
+    var cMap = await ctGetMap(AMIR_ID);
+    var C = { bancos:cMap['102-01'],clientes:cMap['105-01'],iva_ac:cMap['108-01'],prov:cMap['201-01'],iva_tr:cMap['216-01'],ing:cMap['401-01'],gasto:cMap['601-01'] };
+    var periodoId = await ctGetOrCreatePeriodo(AMIR_ID, per.anio, per.mes);
+    var lotesR = await sb.from('cont_xml_lotes').select('id').eq('empresa_id',AMIR_ID);
+    if (lotesR.error||!lotesR.data||!lotesR.data.length) { alert('Carga XMLs primero.'); return; }
+    var loteIds = lotesR.data.map(function(l){return l.id;});
+    var xmlR = await sb.from('cont_xml_cfdis').select('*').in('lote_id',loteIds).eq('status','importado').limit(500);
+    if (xmlR.error) throw xmlR.error;
+    if (!xmlR.data||!xmlR.data.length) { alert('Sin XMLs pendientes. Todos ya contabilizados.'); return; }
+    var ok=0, errs=[];
+    for (var i=0;i<xmlR.data.length;i++) {
+      var cfdi=xmlR.data[i];
+      try {
+        var tc=(cfdi.tipo_cfdi||'').toLowerCase();
+        var tipo=(tc==='ingreso'||tc==='i')?'Ingresos':(tc==='egreso'||tc==='e')?'Egresos':'Diario';
+        var total=parseFloat(cfdi.total)||0;
+        var iva=parseFloat(cfdi.iva_traslado||0);
+        if (!iva&&total) iva=Math.round(total*16/116*100)/100;
+        var sub=Math.round((total-iva)*100)/100;
+        var fecha=(cfdi.fecha_emision||new Date().toISOString()).slice(0,10);
+        var folio=await ctNextFolio(AMIR_ID,tipo);
+        var polR=await sb.from('cont_polizas').insert({empresa_id:AMIR_ID,periodo_id:periodoId,numero_poliza:folio,tipo_poliza:tipo,fecha_poliza:fecha,concepto:(cfdi.nombre_emisor||'CFDI')+' '+(cfdi.uuid_cfdi||'').slice(0,8),referencia_xml:cfdi.uuid_cfdi,status:'borrador',usuario_creo:currentUserRow?currentUserRow.username:'sif'}).select('id').single();
+        if (polR.error) { errs.push(polR.error.message); continue; }
+        var polId=polR.data.id, dets=[];
+        if (tipo==='Egresos'&&C.gasto&&C.prov) {
+          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.gasto.id,concepto_detalle:'Gasto '+(cfdi.nombre_emisor||''),debe:sub,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+          if (iva&&C.iva_ac) dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.iva_ac.id,concepto_detalle:'IVA Acreditable 16%',debe:iva,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+          dets.push({poliza_id:polId,renglon_num:dets.length+1,cuenta_id:C.prov.id,concepto_detalle:'CxP '+(cfdi.nombre_emisor||''),debe:0,haber:total,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+        } else if (tipo==='Ingresos'&&C.clientes&&C.ing) {
+          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.clientes.id,concepto_detalle:'CxC '+(cfdi.nombre_emisor||''),debe:total,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+          dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.ing.id,concepto_detalle:'Ingreso por servicio',debe:0,haber:sub,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+          if (iva&&C.iva_tr) dets.push({poliza_id:polId,renglon_num:3,cuenta_id:C.iva_tr.id,concepto_detalle:'IVA Trasladado 16%',debe:0,haber:iva,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+        } else if (C.bancos) {
+          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.bancos.id,concepto_detalle:cfdi.nombre_emisor||'',debe:total,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+          dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.bancos.id,concepto_detalle:'Contrapartida',debe:0,haber:total,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+        }
+        if (dets.length) {
+          var tD=dets.reduce(function(s,d){return s+d.debe;},0), tH=dets.reduce(function(s,d){return s+d.haber;},0);
+          if (Math.abs(tD-tH)>0.02) { errs.push('Desequilibrio: '+(cfdi.uuid_cfdi||'').slice(0,8)); await sb.from('cont_polizas').delete().eq('id',polId); continue; }
+          var dR=await sb.from('cont_polizas_detalles').insert(dets);
+          if (dR.error) { errs.push(dR.error.message); continue; }
+          await sb.from('cont_xml_cfdis').update({status:'procesado'}).eq('id',cfdi.id);
+          ok++;
+        }
+      } catch(ex){ errs.push(ex.message); }
+    }
+    alert('\u2705 '+ok+' p\u00f3lizas generadas de '+xmlR.data.length+' XMLs'+(errs.length?'\n\u26a0\ufe0f '+errs.length+' errores':''));
+    if (ok) amirCargarPolizas();
+    amirShowResultados('polizas');
+  } catch(e){ alert('Error: '+e.message); }
+  finally { btn.style.opacity='1'; btn.disabled=false; btn.innerHTML=orig; }
+}
+window.amirGenerarPolizas = amirGenerarPolizas;
+async function amirCargarPolizas() {
+  var per=amirGetPeriodo(); if (!per) return;
+  var cont=document.getElementById('amirPolizasCont');
+  var perR=await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
+  if (!perR.data) { cont.innerHTML='<p>Sin per\u00edodo.</p>'; return; }
+  var r=await sb.from('cont_polizas').select('numero_poliza,tipo_poliza,fecha_poliza,concepto,status').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id).order('numero_poliza');
+  if (r.error||!r.data||!r.data.length) { cont.innerHTML='<p style="color:var(--muted)">Sin p\u00f3lizas.</p>'; return; }
+  var html='<p style="font-size:13px;color:#1d6f42;font-weight:600;margin-bottom:8px">\u2705 '+r.data.length+' p\u00f3lizas</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--brand);color:#fff"><th style="padding:7px 10px;text-align:left">Folio</th><th style="padding:7px 10px;text-align:left">Tipo</th><th style="padding:7px 10px;text-align:left">Fecha</th><th style="padding:7px 10px;text-align:left">Concepto</th><th style="padding:7px 10px">Status</th></tr></thead><tbody>';
+  r.data.forEach(function(p,i){ html+='<tr style="background:'+(i%2?'var(--bg)':'var(--panel)')+'"><td style="padding:6px 10px;font-family:monospace">'+p.numero_poliza+'</td><td style="padding:6px 10px">'+p.tipo_poliza+'</td><td style="padding:6px 10px">'+p.fecha_poliza+'</td><td style="padding:6px 10px">'+(p.concepto||'').slice(0,50)+'</td><td style="padding:6px 10px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:11px;background:'+(p.status==='borrador'?'#fef3c7':'#d1fae5')+';color:'+(p.status==='borrador'?'#92400e':'#065f46')+'">'+p.status+'</span></td></tr>'; });
+  html+='</tbody></table></div>';
+  cont.innerHTML=html;
+}
+window.amirCargarPolizas = amirCargarPolizas;
+async function amirBalanza() {
+  var per=amirGetPeriodo(); if (!per) return;
+  var btn=document.getElementById('btnBalanza'), orig=btn.innerHTML;
+  btn.style.opacity='.6'; btn.disabled=true;
+  try {
+    var periodoId=await ctGetOrCreatePeriodo(AMIR_ID,per.anio,per.mes);
+    var polR=await sb.from('cont_polizas').select('id').eq('empresa_id',AMIR_ID).eq('periodo_id',periodoId);
+    if (polR.error) throw polR.error;
+    if (!polR.data||!polR.data.length) { alert('Sin p\u00f3lizas. Genera p\u00f3lizas primero.'); return; }
+    var polIds=polR.data.map(function(p){return p.id;});
+    var detR=await sb.from('cont_polizas_detalles').select('cuenta_id,debe,haber').in('poliza_id',polIds);
+    if (detR.error) throw detR.error;
+    var catR=await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre,tipo,naturaleza').eq('empresa_id',AMIR_ID).order('codigo');
+    if (catR.error) throw catR.error;
+    var saldos={};
+    (detR.data||[]).forEach(function(d){ if (!saldos[d.cuenta_id]) saldos[d.cuenta_id]={debe:0,haber:0}; saldos[d.cuenta_id].debe+=parseFloat(d.debe)||0; saldos[d.cuenta_id].haber+=parseFloat(d.haber)||0; });
+    for (var cid in saldos) {
+      var s=saldos[cid];
+      await sb.from('cont_balanzas').upsert({empresa_id:AMIR_ID,periodo_id:periodoId,cuenta_id:parseInt(cid),saldo_inicial_debe:0,saldo_inicial_haber:0,cargos_periodo:s.debe,abonos_periodo:s.haber,saldo_final_debe:Math.max(0,s.debe-s.haber),saldo_final_haber:Math.max(0,s.haber-s.debe),origen:'auto',fecha_actualizacion:new Date().toISOString(),usuario_actualizacion:currentUserRow?currentUserRow.username:'sif'},{onConflict:'empresa_id,periodo_id,cuenta_id'});
+    }
+    var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var cont=document.getElementById('amirBalanzaCont');
+    var html='<h3 style="margin:0 0 12px 0">Balanza de Comprobaci\u00f3n \u2014 '+MESES[per.mes]+' '+per.anio+'</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--brand);color:#fff"><th style="padding:7px 8px;text-align:left">Cuenta</th><th style="padding:7px 8px;text-align:left">Nombre</th><th style="padding:7px 8px;text-align:right">Cargos</th><th style="padding:7px 8px;text-align:right">Abonos</th><th style="padding:7px 8px;text-align:right">S.Deudor</th><th style="padding:7px 8px;text-align:right">S.Acreedor</th></tr></thead><tbody>';
+    var tD=0,tH=0,tSD=0,tSA=0,row=0;
+    catR.data.forEach(function(ct){
+      if (!saldos[ct.id]) return;
+      var s=saldos[ct.id],sd=Math.max(0,s.debe-s.haber),sa=Math.max(0,s.haber-s.debe);
+      tD+=s.debe; tH+=s.haber; tSD+=sd; tSA+=sa;
+      html+='<tr style="background:'+(row++%2?'var(--bg)':'var(--panel)')+'"><td style="padding:5px 8px;font-family:monospace">'+ct.codigo+'</td><td style="padding:5px 8px">'+ct.nombre+'</td><td style="padding:5px 8px;text-align:right">'+fmt(s.debe)+'</td><td style="padding:5px 8px;text-align:right">'+fmt(s.haber)+'</td><td style="padding:5px 8px;text-align:right;color:#1d6f42">'+(sd?fmt(sd):'')+'</td><td style="padding:5px 8px;text-align:right;color:#a32d2d">'+(sa?fmt(sa):'')+'</td></tr>';
+    });
+    html+='<tr style="background:var(--brand);color:#fff;font-weight:700"><td colspan="2" style="padding:7px 8px">TOTALES</td><td style="padding:7px 8px;text-align:right">'+fmt(tD)+'</td><td style="padding:7px 8px;text-align:right">'+fmt(tH)+'</td><td style="padding:7px 8px;text-align:right">'+fmt(tSD)+'</td><td style="padding:7px 8px;text-align:right">'+fmt(tSA)+'</td></tr></tbody></table></div>';
+    var ok=Math.abs(tD-tH)<0.02&&Math.abs(tSD-tSA)<0.02;
+    html+='<p style="margin-top:10px;font-weight:700;color:'+(ok?'#1d6f42':'#a32d2d')+'">'+(ok?'\u2705 Balanza cuadrada':'\u274c No cuadra \u2014 revisar asientos')+'</p>';
+    cont.innerHTML=html;
+    window._amirBalSaldos=saldos; window._amirBalCat=catR.data; window._amirBalPer=per;
+    amirShowResultados('balanza');
+    amirCargarCuentasAux();
+  } catch(ex){ alert('Error: '+ex.message); }
+  finally { btn.style.opacity='1'; btn.disabled=false; btn.innerHTML=orig; }
+}
+window.amirBalanza = amirBalanza;
+async function amirEstados() {
+  if (!window._amirBalSaldos) { await amirBalanza(); return; }
+  var saldos=window._amirBalSaldos, cuentas=window._amirBalCat, per=window._amirBalPer;
+  var grp={ingreso:[],costo:[],gasto:[],activo:[],pasivo:[],capital:[]};
+  cuentas.forEach(function(ct){ var t=(ct.tipo||'').toLowerCase(); if(grp[t]) grp[t].push({cuenta:ct,s:saldos[ct.id]||{debe:0,haber:0}}); });
+  function sN(o){ var n=(o.cuenta.naturaleza||'D').trim(),sd=o.s.debe-o.s.haber; return n==='D'?sd:-sd; }
+  function sum(arr){ return arr.reduce(function(acc,o){return acc+sN(o);},0); }
+  function er(lbl,val,bold,top,col){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px'+(bold?';font-weight:700':'')+(top?';border-top:1px solid var(--border)':'')+(col?';color:'+col:'')+';"><span>'+lbl+'</span><span>'+fmt(val)+'</span></div>'; }
+  var ing=sum(grp.ingreso),cos=sum(grp.costo),gas=sum(grp.gasto),util=ing-cos-gas;
+  var act=sum(grp.activo),pas=sum(grp.pasivo),cap=sum(grp.capital),capT=cap+util;
+  var banco=0; grp.activo.forEach(function(o){if((o.cuenta.codigo||'').startsWith('102'))banco+=sN(o);});
+  var cxc=0; grp.activo.forEach(function(o){if((o.cuenta.codigo||'').startsWith('105'))cxc+=sN(o);});
+  var cxp=0; grp.pasivo.forEach(function(o){if((o.cuenta.codigo||'').startsWith('201'))cxp+=sN(o);});
+  var cuadre=Math.abs(act-(pas+capT))<1;
+  var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var lbl=MESES[per.mes]+' '+per.anio;
+  var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+  html+='<div style="background:var(--bg);border-radius:12px;padding:16px"><h4 style="margin:0 0 12px 0;color:var(--brand)">\ud83d\udcca Estado de Resultados<br><small style="font-size:11px;color:var(--muted)">'+lbl+'</small></h4>';
+  html+=er('(+) Ingresos',ing,false,false,'#1d6f42')+er('(-) Costo',cos)+er('Utilidad Bruta',ing-cos,true,true)+er('(-) Gastos',gas)+'<hr style="border:2px solid var(--brand);margin:8px 0">'+er(util>=0?'UTILIDAD':'PERDIDA',Math.abs(util),true,false,util>=0?'#1d6f42':'#a32d2d');
+  if(!ing) html+='<p style="font-size:11px;color:var(--muted);margin-top:6px">\u26a0\ufe0f Sin ingresos registrados</p>';
+  html+='</div>';
+  html+='<div style="background:var(--bg);border-radius:12px;padding:16px"><h4 style="margin:0 0 12px 0;color:var(--brand)">\u2696\ufe0f Posici\u00f3n Financiera<br><small style="font-size:11px;color:var(--muted)">'+lbl+'</small></h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><b style="font-size:12px;color:#1d6f42">ACTIVO</b>';
+  grp.activo.forEach(function(o){var s=sN(o);if(s)html+=er((o.cuenta.nombre||'').slice(0,20),s);});
+  html+=er('TOTAL ACTIVO',act,true,true)+'</div><div><b style="font-size:12px;color:#a32d2d">PASIVO+CAPITAL</b>';
+  grp.pasivo.forEach(function(o){var s=sN(o);if(s)html+=er((o.cuenta.nombre||'').slice(0,20),s);});
+  html+=er('Resultado',util);
+  grp.capital.forEach(function(o){var s=sN(o);if(s)html+=er((o.cuenta.nombre||'').slice(0,20),s);});
+  html+=er('TOTAL P+C',pas+capT,true,true)+'</div></div><p style="margin-top:8px;font-size:12px;font-weight:700;color:'+(cuadre?'#1d6f42':'#a32d2d')+'">'+(cuadre?'\u2705 Cuadra':'\u274c Diferencia: '+fmt(Math.abs(act-pas-capT)))+'</p></div></div>';
+  html+='<div style="background:var(--bg);border-radius:12px;padding:16px"><h4 style="margin:0 0 12px 0;color:var(--brand)">\ud83d\udcb0 Flujo de Efectivo<br><small style="font-size:11px;color:var(--muted)">'+lbl+'</small></h4>'+er('Utilidad/P\u00e9rdida',util,false,false,util>=0?'#1d6f42':'#a32d2d');
+  if(cxc) html+=er('Var. Clientes',-cxc);
+  if(cxp) html+=er('Var. Proveedores',cxp);
+  html+='<hr style="border:2px solid var(--brand);margin:8px 0">'+er('Saldo Bancos',banco,true,false,banco>=0?'#1d6f42':'#a32d2d')+'</div>';
+  document.getElementById('amirEstadosCont').innerHTML=html;
+  amirShowResultados('estados');
+}
+window.amirEstados = amirEstados;
+async function amirCargarCuentasAux() {
+  var sel=document.getElementById('amirAuxCuenta'); if (!sel) return;
+  var r=await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id',AMIR_ID).eq('acepta_movimientos',true).order('codigo');
+  sel.innerHTML='<option value="">\u2014 Cuenta \u2014</option>';
+  if (r.data) r.data.forEach(function(ct){ sel.innerHTML+='<option value="'+ct.id+'">'+ct.codigo+' \u2014 '+ct.nombre+'</option>'; });
+}
+function amirAuxiliar() { amirCargarCuentasAux(); amirShowResultados('auxiliar'); }
+window.amirAuxiliar = amirAuxiliar;
+async function amirVerAuxiliar() {
+  var sel=document.getElementById('amirAuxCuenta');
+  if (!sel||!sel.value) { alert('Selecciona una cuenta'); return; }
+  var ctaId=parseInt(sel.value), per=amirGetPeriodo(); if (!per) return;
+  var cont=document.getElementById('amirAuxCont');
+  cont.innerHTML='<p style="color:var(--muted)">Cargando...</p>';
+  try {
+    var perR=await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
+    if (!perR.data) { cont.innerHTML='<p>Sin per\u00edodo.</p>'; return; }
+    var polR=await sb.from('cont_polizas').select('id,numero_poliza,fecha_poliza').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id);
+    var polMap={}; (polR.data||[]).forEach(function(p){polMap[p.id]=p;});
+    var polIds=(polR.data||[]).map(function(p){return p.id;});
+    if (!polIds.length) { cont.innerHTML='<p>Sin p\u00f3lizas.</p>'; return; }
+    var detR=await sb.from('cont_polizas_detalles').select('*').in('poliza_id',polIds).eq('cuenta_id',ctaId).order('poliza_id');
+    var ctaR=await sb.from('cont_catalogo_cuentas').select('codigo,nombre,naturaleza').eq('id',ctaId).single();
+    var cta=ctaR.data||{codigo:'',nombre:'',naturaleza:'D'};
+    var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var tD=0,tH=0,rD='',rH='';
+    (detR.data||[]).forEach(function(d){
+      var pol=polMap[d.poliza_id]||{};
+      var debe=parseFloat(d.debe)||0,haber=parseFloat(d.haber)||0;
+      tD+=debe; tH+=haber;
+      var row='<tr><td style="padding:4px 8px;font-size:12px">'+(pol.numero_poliza||'')+'</td><td style="padding:4px 8px;font-size:12px">'+(pol.fecha_poliza||'')+'</td><td style="padding:4px 8px;font-size:12px">'+(d.concepto_detalle||'')+'</td>';
+      if(debe) rD+=row+'<td style="padding:4px 8px;text-align:right;font-weight:600;color:#1d6f42">'+fmt(debe)+'</td></tr>';
+      if(haber) rH+=row+'<td style="padding:4px 8px;text-align:right;font-weight:600;color:#a32d2d">'+fmt(haber)+'</td></tr>';
+    });
+    var saldo=cta.naturaleza.trim()==='D'?tD-tH:tH-tD;
+    var th='padding:5px 8px;text-align:left;font-size:12px';
+    var tbl=function(rows,tot,col){ return '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--brand);color:#fff"><th style="'+th+'">P\u00f3liza</th><th style="'+th+'">Fecha</th><th style="'+th+'">Concepto</th><th style="'+th+';text-align:right">Monto</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="padding:8px;text-align:center;color:var(--muted);font-size:12px">Sin movimientos</td></tr>')+'</tbody><tfoot><tr style="background:var(--border);font-weight:700"><td colspan="3" style="padding:5px 8px;font-size:12px">Total</td><td style="padding:5px 8px;text-align:right;font-size:12px;color:'+col+'">'+fmt(tot)+'</td></tr></tfoot></table>'; };
+    var html='<h4 style="margin:0 0 10px 0">'+cta.codigo+' \u2014 '+cta.nombre+' | '+MESES[per.mes]+' '+per.anio+'</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h5 style="color:#1d6f42;text-align:center;margin:0 0 6px 0">DEBE</h5>'+tbl(rD,tD,'#1d6f42')+'</div><div><h5 style="color:#a32d2d;text-align:center;margin:0 0 6px 0">HABER</h5>'+tbl(rH,tH,'#a32d2d')+'</div></div>';
+    html+='<div style="margin-top:10px;padding:8px 14px;background:var(--panel);border-radius:8px;display:flex;gap:20px;font-size:13px"><span><b>Debe:</b> '+fmt(tD)+'</span><span><b>Haber:</b> '+fmt(tH)+'</span><span style="font-weight:700;color:'+(saldo>=0?'#1d6f42':'#a32d2d')+'">Saldo '+(cta.naturaleza.trim()==='D'?'Deudor':'Acreedor')+': '+fmt(Math.abs(saldo))+'</span></div>';
+    cont.innerHTML=html;
+  } catch(ex){ cont.innerHTML='<p style="color:red">Error: '+ex.message+'</p>'; }
+}
+window.amirVerAuxiliar = amirVerAuxiliar;
+async function amirContPAQ() {
+  var per=amirGetPeriodo(); if (!per) return;
+  try {
+    var perR=await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
+    if (!perR.data) { alert('Sin per\u00edodo.'); return; }
+    var polR=await sb.from('cont_polizas').select('*').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id).order('numero_poliza');
+    if (polR.error) throw polR.error;
+    if (!polR.data||!polR.data.length) { alert('Sin p\u00f3lizas.'); return; }
+    var catR=await sb.from('cont_catalogo_cuentas').select('id,codigo').eq('empresa_id',AMIR_ID);
+    var catMap={}; (catR.data||[]).forEach(function(ct){catMap[ct.id]=ct;});
+    var lineas=[], MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    for (var i=0;i<polR.data.length;i++) {
+      var pol=polR.data[i];
+      var tn=pol.tipo_poliza==='Ingresos'?'1':pol.tipo_poliza==='Egresos'?'2':'3';
+      var folio=(pol.numero_poliza||'').replace(/[^0-9]/g,'')||String(i+1);
+      var fecha=(pol.fecha_poliza||new Date().toISOString().slice(0,10)).replace(/-/g,'');
+      var concepto=(pol.concepto||'').replace(/\|/g,' ').slice(0,60);
+      lineas.push('C|'+tn+'|'+folio+'|'+fecha+'|'+concepto);
+      var dR=await sb.from('cont_polizas_detalles').select('*').eq('poliza_id',pol.id).order('renglon_num');
+      if(dR.data) dR.data.forEach(function(d){
+        var cod=((catMap[d.cuenta_id]||{}).codigo||'000').replace(/-/g,'.');
+        var desc=(d.concepto_detalle||'').replace(/\|/g,' ').slice(0,40);
+        var db=parseFloat(d.debe)||0,hb=parseFloat(d.haber)||0;
+        if(db>0) lineas.push('M|'+cod+'|1|'+db.toFixed(2)+'|'+desc);
+        if(hb>0) lineas.push('M|'+cod+'|2|'+hb.toFixed(2)+'|'+desc);
+      });
+    }
+    var blob=new Blob([lineas.join('\r\n')],{type:'text/plain;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='Polizas_Amir_'+MESES[per.mes]+per.anio+'.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('\u2705 TXT: '+lineas.length+' l\u00edneas, '+polR.data.length+' p\u00f3lizas');
+  } catch(ex){ alert('Error: '+ex.message); }
+}
+window.amirContPAQ = amirContPAQ;
+document.addEventListener('DOMContentLoaded', function() {
+  var hoy=new Date(), inp=document.getElementById('amirPeriodo');
+  if (inp) { inp.value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0'); amirPeriodoChange(); }
+});
+
 </script>
 </body>
 </html>
