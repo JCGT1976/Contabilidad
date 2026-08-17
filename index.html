@@ -1919,10 +1919,8 @@ async function amirGuardarLote() {
     var periodoId = await ctGetOrCreatePeriodo(AMIR_ID, per.anio, per.mes);
     var loteR = await sb.from('cont_xml_lotes').insert({
       empresa_id: AMIR_ID, empresa_nombre: 'Amir Tafreshi', tipo_lote: 'xml',
-      periodo: per.anio + '-' + String(per.mes).padStart(2,'0'),
-      descripcion: 'CFDIs ' + MESES[per.mes] + ' ' + per.anio,
-      total_documentos: _amirXMLbuffer.length, status: 'completado',
-      usuario_creo: currentUserRow ? currentUserRow.username : 'sif'
+      num_cfdis: _amirXMLbuffer.length, status: 'procesado',
+      usuario_cargo: currentUserRow ? currentUserRow.username : 'sif'
     }).select('id').single();
     if (loteR.error) throw loteR.error;
     var loteId = loteR.data.id;
@@ -1942,10 +1940,10 @@ async function amirGuardarLote() {
 window.amirGuardarLote = amirGuardarLote;
 async function amirCargarLotes() {
   var cont = document.getElementById('amirLotesHist'); if (!cont) return;
-  var r = await sb.from('cont_xml_lotes').select('id,periodo,descripcion,total_documentos,status').eq('empresa_id',AMIR_ID).order('id',{ascending:false}).limit(10);
+  var r = await sb.from('cont_xml_lotes').select('id,num_cfdis,status,fecha_creo').eq('empresa_id',AMIR_ID).order('id',{ascending:false}).limit(10);
   if (r.error||!r.data||!r.data.length) { cont.innerHTML='<p style="font-size:12px;color:var(--muted)">Sin lotes previos.</p>'; return; }
   var html='<h4 style="margin:0 0 6px 0;font-size:13px">Historial</h4><table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>';
-  r.data.forEach(function(l,i){ html+='<tr style="background:'+(i%2?'var(--bg)':'var(--panel)')+'"><td style="padding:4px 8px">'+(l.periodo||'')+'</td><td style="padding:4px 8px">'+(l.descripcion||'')+'</td><td style="padding:4px 8px;text-align:right">'+(l.total_documentos||0)+' docs</td><td style="padding:4px 8px">'+(l.status||'')+'</td></tr>'; });
+  r.data.forEach(function(l,i){ html+='<tr style="background:'+(i%2?'var(--bg)':'var(--panel)')+'"><td style="padding:4px 8px">'+(l.fecha_creo||'').slice(0,10)+'</td><td style="padding:4px 8px;text-align:right">'+(l.num_cfdis||0)+' CFDIs</td><td style="padding:4px 8px">'+(l.status||'')+'</td></tr>'; });
   html+='</tbody></table>';
   cont.innerHTML=html;
 }
