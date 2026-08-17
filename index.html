@@ -1952,10 +1952,18 @@ async function amirGuardarLote() {
         usuario_creo:   currentUserRow ? currentUserRow.username : 'sif'
       };
     });
-    for (var i = 0; i < payload.length; i += 50) {
-      var ins = await sb.from('cont_xml_cfdis').insert(payload.slice(i, i+50));
+    // Filtrar UUIDs ya existentes
+    var uuids = payload.map(function(x){return x.uuid_cfdi;}).filter(Boolean);
+    var existR = await sb.from('cont_xml_cfdis').select('uuid_cfdi').in('uuid_cfdi', uuids);
+    var existSet = new Set((existR.data||[]).map(function(r){return r.uuid_cfdi;}));
+    var nuevos = payload.filter(function(x){return !existSet.has(x.uuid_cfdi);});
+    var dupes = payload.length - nuevos.length;
+    if (!nuevos.length) { alert('\u26a0\ufe0f Todos los CFDIs ya estaban guardados (' + dupes + ' duplicados).'); return; }
+    for (var i = 0; i < nuevos.length; i += 50) {
+      var ins = await sb.from('cont_xml_cfdis').insert(nuevos.slice(i, i+50));
       if (ins.error) throw ins.error;
     }
+    if (dupes) alert('\u2139\ufe0f ' + dupes + ' CFDIs omitidos (ya exist\u00edan).');
     alert('\u2705 ' + _amirXMLbuffer.length + ' CFDIs guardados');
     _amirXMLbuffer = [];
     document.getElementById('amirXMLBuffer').innerHTML = '';
