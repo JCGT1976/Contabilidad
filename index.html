@@ -302,7 +302,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
           <div>
             <div style="font-size:18px;font-weight:700;color:#fff">&#128100; Amir Tafreshi</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Persona F&iacute;sica &middot; RFC: TAAM810706S72 &middot; empresa_id: 6</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Persona F&iacute;sica &middot; Arrendamiento (Cap. III LISR) &middot; RFC: TAAM810706S72</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <label style="font-size:12px;color:rgba(255,255,255,.8);font-weight:600">Per&iacute;odo:</label>
@@ -1880,13 +1880,21 @@ function amirParseXML(text, fname) {
     var receptor = doc.getElementsByTagNameNS(ns, 'Receptor')[0] || {};
     var tipo = (cfdi.getAttribute('TipoDeComprobante') || 'I').toLowerCase();
     var tipoMap = { i:'ingreso', e:'egreso', t:'traslado', n:'nomina', p:'pago' };
-    var ivaTotal = 0;
+    var ivaTotal = 0, isrRet = 0, ivaRet = 0;
     var traslados = doc.getElementsByTagNameNS(ns, 'Traslado');
     for (var k = 0; k < traslados.length; k++) {
       ivaTotal += parseFloat(traslados[k].getAttribute('Importe') || 0);
     }
+    var retenciones = doc.getElementsByTagNameNS(ns, 'Retencion');
+    for (var k = 0; k < retenciones.length; k++) {
+      var imp = retenciones[k].getAttribute('Impuesto');
+      var mto = parseFloat(retenciones[k].getAttribute('Importe') || 0);
+      if (imp === '001') isrRet += mto;
+      if (imp === '002') ivaRet += mto;
+    }
     return {
       uuid_cfdi: uuid, tipo_cfdi: tipoMap[tipo] || 'ingreso',
+      isr_retenido: isrRet, iva_retenido: ivaRet,
       fecha_emision: (cfdi.getAttribute('Fecha') || '').slice(0, 10),
       rfc_emisor: (emisor.getAttribute ? emisor.getAttribute('Rfc') : '') || '',
       nombre_emisor: (emisor.getAttribute ? emisor.getAttribute('Nombre') : '') || '',
@@ -1972,7 +1980,17 @@ async function amirGenerarPolizas() {
   var orig = btn.innerHTML; btn.style.opacity='.6'; btn.disabled=true;
   try {
     var cMap = await ctGetMap(AMIR_ID);
-    var C = { bancos:cMap['102-01'],clientes:cMap['105-01'],iva_ac:cMap['108-01'],prov:cMap['201-01'],iva_tr:cMap['216-01'],ing:cMap['401-01'],gasto:cMap['601-01'] };
+    var C = {
+      bancos:  cMap['102-01'],  // BBVA
+      cxc:     cMap['105-01'],  // Arrendatarios
+      iva_ac:  cMap['108-01'],  // IVA Acreditable
+      isr_cb:  cMap['109-01'],  // ISR Retenido x Cobrar
+      iva_cb:  cMap['110-01'],  // IVA Retenido x Cobrar
+      prov:    cMap['201-01'],  // Proveedores
+      iva_tr:  cMap['216-01'],  // IVA Trasladado
+      ing:     cMap['401-01'],  // Ingresos Arrendamiento
+      gasto:   cMap['601-01']   // Gastos deducibles (default: predial)
+    };
     var periodoId = await ctGetOrCreatePeriodo(AMIR_ID, per.anio, per.mes);
     var lotesR = await sb.from('cont_xml_lotes').select('id').eq('empresa_id',AMIR_ID);
     if (lotesR.error||!lotesR.data||!lotesR.data.length) { alert('Carga XMLs primero.'); return; }
@@ -1998,10 +2016,24 @@ async function amirGenerarPolizas() {
           dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.gasto.id,concepto_detalle:'Gasto '+(cfdi.nombre_emisor||''),debe:sub,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
           if (iva&&C.iva_ac) dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.iva_ac.id,concepto_detalle:'IVA Acreditable 16%',debe:iva,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
           dets.push({poliza_id:polId,renglon_num:dets.length+1,cuenta_id:C.prov.id,concepto_detalle:'CxP '+(cfdi.nombre_emisor||''),debe:0,haber:total,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
-        } else if (tipo==='Ingresos'&&C.clientes&&C.ing) {
-          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.clientes.id,concepto_detalle:'CxC '+(cfdi.nombre_emisor||''),debe:total,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
-          dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.ing.id,concepto_detalle:'Ingreso por servicio',debe:0,haber:sub,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
-          if (iva&&C.iva_tr) dets.push({poliza_id:polId,renglon_num:3,cuenta_id:C.iva_tr.id,concepto_detalle:'IVA Trasladado 16%',debe:0,haber:iva,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+        } else if (tipo==='Ingresos'&&C.cxc&&C.ing) {
+          // PF Arrendamiento: ISR ret 10% + IVA ret 2/3
+          var isrRet = parseFloat(cfdi.isr_retenido||0) || Math.round(sub*0.10*100)/100;
+          var ivaRet = parseFloat(cfdi.iva_retenido||0) || Math.round(iva*2/3*100)/100;
+          var neto   = Math.round((total-isrRet-ivaRet)*100)/100;
+          var uc = currentUserRow?currentUserRow.username:'sif';
+          var mn = cfdi.moneda||'MXN', ux = cfdi.uuid_cfdi, em = cfdi.nombre_emisor||'';
+          var rn = 0;
+          // D: CxC arrendatario (neto cobrado)
+          dets.push({poliza_id:polId,renglon_num:++rn,cuenta_id:C.cxc.id,concepto_detalle:'Renta '+em,debe:neto,haber:0,moneda:mn,referencia_cfdi:ux,usuario_creo:uc});
+          // D: ISR Retenido x Cobrar
+          if (isrRet && C.isr_cb) dets.push({poliza_id:polId,renglon_num:++rn,cuenta_id:C.isr_cb.id,concepto_detalle:'ISR ret 10% '+em,debe:isrRet,haber:0,moneda:mn,referencia_cfdi:ux,usuario_creo:uc});
+          // D: IVA Retenido x Cobrar
+          if (ivaRet && C.iva_cb) dets.push({poliza_id:polId,renglon_num:++rn,cuenta_id:C.iva_cb.id,concepto_detalle:'IVA ret 2/3 '+em,debe:ivaRet,haber:0,moneda:mn,referencia_cfdi:ux,usuario_creo:uc});
+          // H: Ingresos por Arrendamiento (subtotal)
+          dets.push({poliza_id:polId,renglon_num:++rn,cuenta_id:C.ing.id,concepto_detalle:'Arrendamiento '+em,debe:0,haber:sub,moneda:mn,referencia_cfdi:ux,usuario_creo:uc});
+          // H: IVA Trasladado 16%
+          if (iva && C.iva_tr) dets.push({poliza_id:polId,renglon_num:++rn,cuenta_id:C.iva_tr.id,concepto_detalle:'IVA trasladado 16%',debe:0,haber:iva,moneda:mn,referencia_cfdi:ux,usuario_creo:uc});
         } else if (C.bancos) {
           dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.bancos.id,concepto_detalle:cfdi.nombre_emisor||'',debe:total,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
           dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.bancos.id,concepto_detalle:'Contrapartida',debe:0,haber:total,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
