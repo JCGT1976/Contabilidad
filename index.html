@@ -1924,7 +1924,25 @@ async function amirGuardarLote() {
     }).select('id').single();
     if (loteR.error) throw loteR.error;
     var loteId = loteR.data.id;
-    var payload = _amirXMLbuffer.map(function(x){ return Object.assign({}, x, {lote_id: loteId}); });
+    var payload = _amirXMLbuffer.map(function(x){
+      return {
+        lote_id:        loteId,
+        empresa_id:     AMIR_ID,
+        empresa_nombre: 'Amir Tafreshi',
+        uuid_cfdi:      x.uuid_cfdi      || null,
+        fecha_emision:  x.fecha_emision  || null,
+        tipo_cfdi:      x.tipo_cfdi      || 'egreso',
+        rfc_emisor:     x.rfc_emisor     || null,
+        nombre_emisor:  x.nombre_emisor  || null,
+        rfc_receptor:   x.rfc_receptor   || null,
+        nombre_receptor: x.nombre_receptor || null,
+        subtotal:       x.subtotal       || null,
+        total:          x.total          || null,
+        moneda:         x.moneda         || 'MXN',
+        status:         'importado',
+        usuario_creo:   currentUserRow ? currentUserRow.username : 'sif'
+      };
+    });
     for (var i = 0; i < payload.length; i += 50) {
       var ins = await sb.from('cont_xml_cfdis').insert(payload.slice(i, i+50));
       if (ins.error) throw ins.error;
@@ -1968,8 +1986,7 @@ async function amirGenerarPolizas() {
         var tc=(cfdi.tipo_cfdi||'').toLowerCase();
         var tipo=(tc==='ingreso'||tc==='i')?'Ingresos':(tc==='egreso'||tc==='e')?'Egresos':'Diario';
         var total=parseFloat(cfdi.total)||0;
-        var iva=parseFloat(cfdi.iva_traslado||0);
-        if (!iva&&total) iva=Math.round(total*16/116*100)/100;
+        var iva=Math.round(total*16/116*100)/100; // computed — iva_traslado not in schema
         var sub=Math.round((total-iva)*100)/100;
         var fecha=(cfdi.fecha_emision||new Date().toISOString()).slice(0,10);
         var folio=await ctNextFolio(AMIR_ID,tipo);
