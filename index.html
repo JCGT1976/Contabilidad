@@ -1865,6 +1865,7 @@ async function amirHandleFiles(files) {
   }
   renderAmirBuffer(buf);
 }
+function tipoChar(t){ var m={ingreso:'I',egreso:'E',traslado:'T',nomina:'N',pago:'P',i:'I',e:'E',t:'T',n:'N',p:'P'}; return m[(t||'').toLowerCase()]||'E'; }
 function amirParseXML(text, fname) {
   try {
     var parser = new DOMParser();
@@ -1931,7 +1932,7 @@ async function amirGuardarLote() {
         empresa_nombre: 'Amir Tafreshi',
         uuid_cfdi:      x.uuid_cfdi      || null,
         fecha_emision:  x.fecha_emision  || null,
-        tipo_cfdi:      x.tipo_cfdi      || 'egreso',
+        tipo_cfdi:      tipoChar(x.tipo_cfdi),
         rfc_emisor:     x.rfc_emisor     || null,
         nombre_emisor:  x.nombre_emisor  || null,
         rfc_receptor:   x.rfc_receptor   || null,
