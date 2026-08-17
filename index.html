@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 <style>
   :root {
     --brand: #002855;
@@ -222,12 +223,18 @@
 
   .proc-btn {
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:6px;padding:20px 12px;border:none;border-radius:12px;color:#fff;
-    cursor:pointer;transition:transform .15s,opacity .15s;min-height:100px;
-    box-shadow:0 4px 12px rgba(0,0,0,.15);
+    gap:8px;padding:20px 16px;border:1.5px solid #d0dff5;border-radius:12px;
+    background:#fff;color:#002855;cursor:pointer;min-height:110px;
+    box-shadow:0 2px 8px rgba(0,40,85,.08);
+    transition:all .18s ease;position:relative;overflow:hidden;
   }
-  .proc-btn:hover{transform:translateY(-2px);opacity:.92;}
-  .proc-btn:active{transform:scale(.97);}
+  .proc-btn svg { color:#185fa5; width:26px; height:26px; stroke-width:1.8; }
+  .proc-btn .btn-title { font-size:13px;font-weight:700;color:#002855;text-align:center;line-height:1.3; }
+  .proc-btn .btn-sub { font-size:11px;color:#6b8ab8;text-align:center;line-height:1.2; }
+  .proc-btn:hover { background:#e8f0fb;border-color:#185fa5;transform:translateY(-2px);box-shadow:0 6px 16px rgba(24,95,165,.15); }
+  .proc-btn:hover svg { color:#002855; }
+  .proc-btn:active { transform:scale(.97);background:#dbeafe; }
+  .proc-btn:disabled { opacity:.5;cursor:not-allowed;transform:none; }
 </style>
 </head>
 <body>
@@ -306,12 +313,30 @@
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px">
-        <button onclick="amirToggleXML()" class="proc-btn" style="background:#0ea5e9"><span style="font-size:24px">&#128228;</span><span style="font-size:13px;font-weight:700">Cargar XMLs</span><span style="font-size:11px;opacity:.8">Paso 1</span></button>
-        <button onclick="amirGenerarPolizas()" class="proc-btn" id="btnPolizas" style="background:#7c3aed"><span style="font-size:24px">&#9889;</span><span style="font-size:13px;font-weight:700">Generar P&oacute;lizas</span><span style="font-size:11px;opacity:.8">Paso 2</span></button>
-        <button onclick="amirBalanza()" class="proc-btn" id="btnBalanza" style="background:#185fa5"><span style="font-size:24px">&#9878;&#65039;</span><span style="font-size:13px;font-weight:700">Balanza</span><span style="font-size:11px;opacity:.8">Paso 3</span></button>
-        <button onclick="amirEstados()" class="proc-btn" id="btnEstados" style="background:#059669"><span style="font-size:24px">&#128202;</span><span style="font-size:13px;font-weight:700">Estados Financieros</span><span style="font-size:11px;opacity:.8">Paso 4</span></button>
-        <button onclick="amirAuxiliar()" class="proc-btn" style="background:#b45309"><span style="font-size:24px">&#128209;</span><span style="font-size:13px;font-weight:700">Auxiliar T</span><span style="font-size:11px;opacity:.8">Libro Mayor</span></button>
-        <button onclick="amirContPAQ()" class="proc-btn" style="background:#dc2626"><span style="font-size:24px">&#128196;</span><span style="font-size:13px;font-weight:700">ContPAQ TXT</span><span style="font-size:11px;opacity:.8">Descargar</span></button>
+        <button onclick="amirToggleXML()" class="proc-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <span class="btn-title">Cargar XMLs</span><span class="btn-sub">XML &middot; ZIP &middot; Excel</span>
+        </button>
+        <button onclick="amirGenerarPolizas()" class="proc-btn" id="btnPolizas">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span class="btn-title">Generar P&oacute;lizas</span><span class="btn-sub">Asientos contables</span>
+        </button>
+        <button onclick="amirBalanza()" class="proc-btn" id="btnBalanza">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span class="btn-title">Balanza</span><span class="btn-sub">Comprobaci&oacute;n</span>
+        </button>
+        <button onclick="amirEstados()" class="proc-btn" id="btnEstados">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="btn-title">Estados Financieros</span><span class="btn-sub">ER &middot; BG &middot; EFE</span>
+        </button>
+        <button onclick="amirAuxiliar()" class="proc-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span class="btn-title">Auxiliar T</span><span class="btn-sub">Libro Mayor</span>
+        </button>
+        <button onclick="amirContPAQ()" class="proc-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span class="btn-title">ContPAQ TXT</span><span class="btn-sub">Exportar p&oacute;lizas</span>
+        </button>
       </div>
 
       <div id="amirXMLPanel" style="display:none;margin-bottom:12px">
@@ -322,10 +347,10 @@
           </div>
           <div id="amirDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('amirFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="amirHandleDrop(event)">
             <div style="font-size:32px;margin-bottom:8px">&#128193;</div>
-            <div style="font-weight:600;font-size:14px">Arrastra XMLs o ZIPs aqu&iacute;</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px">o haz click para seleccionar</div>
+            <div style="font-weight:600;font-size:14px">Arrastra XML &middot; ZIP &middot; Excel</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Soporta .xml .zip .xlsx</div>
           </div>
-          <input type="file" id="amirFileInput" multiple accept=".xml,.zip" style="display:none" onchange="amirHandleFiles(this.files)">
+          <input type="file" id="amirFileInput" multiple accept=".xml,.zip,.xlsx,.xls" style="display:none" onchange="amirHandleFiles(this.files)">
           <div id="amirXMLBuffer" style="margin-top:12px"></div>
           <div style="margin-top:12px">
             <button id="amirGuardarBtn" onclick="amirGuardarLote()" style="display:none;padding:10px 20px;border:none;border-radius:8px;background:#185fa5;color:#fff;font-weight:700;cursor:pointer">&#128190; Guardar Lote</button>
@@ -1774,7 +1799,54 @@ async function amirHandleFiles(files) {
   buf.innerHTML = '<p style="color:var(--muted);font-size:13px">Procesando...</p>';
   for (var i = 0; i < files.length; i++) {
     var file = files[i], name = file.name.toLowerCase();
-    if (name.endsWith('.xml')) {
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      try {
+        var ab2 = await file.arrayBuffer();
+        var wb = XLSX.read(ab2, {type:'array', cellDates:true});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
+        var hdrIdx = 0;
+        for (var hi=0; hi<Math.min(5,rows.length); hi++) {
+          if (rows[hi] && rows[hi].some(function(cell){ return String(cell||'').toLowerCase().includes('uuid'); })) { hdrIdx=hi; break; }
+        }
+        var hdr = rows[hdrIdx] || [];
+        var colIdx = {};
+        hdr.forEach(function(h,ci){ if(h) colIdx[String(h).trim().toLowerCase()] = ci; });
+        var cFecha  = colIdx['fecha comprobante'] !== undefined ? colIdx['fecha comprobante'] : 0;
+        var cRFC    = colIdx['rfc emisor']         !== undefined ? colIdx['rfc emisor']         : 3;
+        var cNombre = colIdx['nombre emisor']      !== undefined ? colIdx['nombre emisor']      : 4;
+        var cMoneda = colIdx['moneda']             !== undefined ? colIdx['moneda']             : 5;
+        var cTotal  = colIdx['total']              !== undefined ? colIdx['total']              : 7;
+        var cUUID   = colIdx['uuid']               !== undefined ? colIdx['uuid']               : 16;
+        for (var ri=hdrIdx+1; ri<rows.length; ri++) {
+          var row = rows[ri];
+          if (!row || !row[cUUID] || String(row[cUUID]).trim() === '') continue;
+          var totalVal = parseFloat(String(row[cTotal]||'0').replace(/,/g,'')) || 0;
+          if (!totalVal) continue;
+          var iva = Math.round(totalVal*16/116*100)/100;
+          var fechaRaw = String(row[cFecha]||'').trim();
+          var fechaOut = fechaRaw;
+          if (fechaRaw.includes('/')) {
+            var fp = fechaRaw.split('/');
+            if (fp.length===3) fechaOut = fp[2]+'-'+String(fp[1]).padStart(2,'0')+'-'+String(fp[0]).padStart(2,'0');
+          }
+          _amirXMLbuffer.push({
+            uuid_cfdi: String(row[cUUID]).trim(),
+            tipo_cfdi: 'egreso',
+            fecha_emision: fechaOut,
+            rfc_emisor: String(row[cRFC]||'').trim(),
+            nombre_emisor: String(row[cNombre]||'').trim(),
+            rfc_receptor: 'TAAM810706S72',
+            nombre_receptor: 'Amir Tafreshi',
+            subtotal: Math.round((totalVal-iva)*100)/100,
+            total: totalVal,
+            iva_traslado: iva,
+            moneda: String(row[cMoneda]||'MXN').trim(),
+            status: 'importado'
+          });
+        }
+      } catch(exXL) { alert('Error Excel: '+exXL.message); }
+    } else if (name.endsWith('.xml')) {
       var text = await file.text();
       var parsed = amirParseXML(text, file.name);
       if (parsed) _amirXMLbuffer.push(parsed);
