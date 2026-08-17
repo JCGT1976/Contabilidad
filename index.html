@@ -316,50 +316,71 @@
     <!-- Balanzas -->
     <div class="view" data-view="balanzas">
       <div class="card">
-        <h2 data-i18n="balanzas_title">⚖️ Balanzas de Comprobación</h2>
-        <p class="sub" data-i18n="balanzas_sub">Saldos iniciales, movimientos y saldos finales por empresa y período.</p>
-        <div class="empty-state">
-          <div class="icon">🏗️</div>
-          <h3 data-i18n="wip_title">En construcción</h3>
-          <p data-i18n="wip_balanzas">Próximamente: import histórico, balanza consolidada, XML SAT.</p>
+        <h2>⚖️ Balanza de Comprobación</h2>
+        <p class="sub">Saldos iniciales, movimientos y saldos finales por empresa y período.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <select id="balanzaEmpresa" onchange="cargarPeriodosEn('balanzaPeriodo',this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
+            <option value="">— Empresa —</option>
+          </select>
+          <select id="balanzaPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
+            <option value="">— Período —</option>
+          </select>
+          <button onclick="calcularBalanza()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">⚡ Calcular Balanza</button>
+          <button onclick="exportarContPAQ()" style="padding:8px 16px;border:none;border-radius:8px;background:#10b981;color:#fff;cursor:pointer;font-weight:600;font-size:13px">📄 ContPAQ TXT</button>
         </div>
+        <div id="balanzaCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa y período, luego calcula.</p></div>
       </div>
     </div>
 
-    <!-- Estados Financieros -->
+<!-- Estados Financieros -->
     <div class="view" data-view="estados">
       <div class="card">
-        <h2 data-i18n="estados_title">📊 Estados Financieros</h2>
-        <p class="sub" data-i18n="estados_sub">Balance General, Estado de Resultados, Flujo de Efectivo y Cambios en el Capital.</p>
-        <div class="empty-state">
-          <div class="icon">🏗️</div>
-          <h3 data-i18n="wip_title">En construcción</h3>
-          <p data-i18n="wip_estados">Próximamente: por empresa y consolidado, con comparativos.</p>
+        <h2>📊 Estados Financieros</h2>
+        <p class="sub">ER · Estado de Posición Financiera · Estado de Flujo de Efectivo.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <select id="estadosEmpresa" onchange="cargarPeriodosEn('estadosPeriodo',this.value)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
+            <option value="">— Empresa —</option>
+          </select>
+          <select id="estadosPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
+            <option value="">— Período —</option>
+          </select>
+          <button onclick="calcularEstados()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">📊 Generar Estados</button>
         </div>
+        <div id="estadosCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa y período. Se requiere balanza calculada.</p></div>
       </div>
     </div>
 
-    <!-- Ratios -->
+<!-- Ratios -->
     <div class="view" data-view="ratios">
       <div class="card">
-        <h2 data-i18n="ratios_title">📈 Ratios Financieros</h2>
-        <p class="sub" data-i18n="ratios_sub">Liquidez, endeudamiento, rentabilidad y actividad.</p>
-        <div class="empty-state">
-          <div class="icon">🏗️</div>
-          <h3 data-i18n="wip_title">En construcción</h3>
-          <p data-i18n="wip_ratios">Próximamente: análisis DuPont, benchmarks por industria.</p>
+        <h2>📒 Auxiliar Libro Mayor — Esquema T</h2>
+        <p class="sub">Movimientos desglosados por cuenta contable en forma de T.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <select id="auxEmpresa" onchange="cargarPeriodosEn('auxPeriodo',this.value);auxCargarCuentas()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:160px">
+            <option value="">— Empresa —</option>
+          </select>
+          <select id="auxPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:140px">
+            <option value="">— Período —</option>
+          </select>
+          <select id="auxCuenta" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:200px">
+            <option value="">— Cuenta —</option>
+          </select>
+          <button onclick="verAuxiliarT()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;cursor:pointer;font-weight:600;font-size:13px">📒 Ver Auxiliar T</button>
         </div>
+        <div id="auxCont"><p style="color:var(--muted);font-size:13px">Selecciona empresa, período y cuenta.</p></div>
       </div>
     </div>
 
-    <!-- Pólizas -->
+<!-- Pólizas -->
     <div class="view" data-view="polizas">
       <div class="card">
         <h2>📝 Pólizas Contables</h2>
         <p class="sub">Ingresos, Egresos, Diario con partida doble (NIF México 2026)</p>
         <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
           <select id="polizaFiltroEmpresa" onchange="cargarListaPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; min-width:180px;"><option value="">Selecciona empresa...</option></select>
-          <button class="btn-accent" onclick="showPolizaNueva()" style="padding:10px 16px; border-radius:8px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">➕ Nueva Póliza</button><input type="month" id="xmlGenPeriodo" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" title="Período de los XMLs a contabilizar"><button class="btn-accent" onclick="generarPolizasDesdeXML()" style="padding:10px 16px; border-radius:8px; background:#10b981; color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">⚡ Generar desde XML</button>
+          <button class="btn-accent" onclick="showPolizaNueva()" style="padding:10px 16px; border-radius:8px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">➕ Nueva Póliza</button><input type="month" id="xmlGenPeriodo" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" title="Período de los XMLs a contabilizar"><input type="month" id="xmlGenPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" title="Período a contabilizar">
+          <input type="month" id="xmlGenPeriodo" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" title="Período a contabilizar">
+          <button class="btn-accent" onclick="generarPolizasDesdeXML()" style="padding:10px 16px; border-radius:8px; background:#10b981; color:#fff; border:none; cursor:pointer; font-weight:600; font-size:13px;">⚡ Generar desde XML</button>
           <select id="polizaFiltroTipo" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los tipos</option><option value="Ingresos">Ingresos</option><option value="Egresos">Egresos</option><option value="Diario">Diario</option></select>
           <select id="polizaFiltroStatus" onchange="filtrarPolizas()" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px;"><option value="">Todos los status</option><option value="borrador">Borrador</option><option value="revisada">Revisada</option><option value="contabilizada">Contabilizada</option><option value="anulada">Anulada</option></select>
         </div>
@@ -917,192 +938,412 @@ async function verPoliza(polizaId) {
 
 async function generarPolizasDesdeXML() {
   if (!puede('write')) { alert('Sin permiso'); return; }
-  
-  let empSel = document.getElementById('polizaFiltroEmpresa') || document.getElementById('polizaEmpresa');
-  if (!empSel || !empSel.value) { alert('Selecciona empresa primero'); return; }
-  
-  let empId = parseInt(empSel.value);
-  let btn = event.target;
-  btn.disabled = true;
-  btn.textContent = '⏳ Procesando...';
-  
+  var empSel = document.getElementById('polizaFiltroEmpresa') || document.getElementById('polizaEmpresa');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa'); return; }
+  var empId = parseInt(empSel.value);
+  var btn = event ? event.target : null;
+  var btnTxt = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Procesando...'; }
   try {
-    // Obtener catálogo de cuentas para la empresa
-    let catRes = await sb.from('cont_catalogo_cuentas').select('*').eq('empresa_id', empId);
-    if (catRes.error) throw catRes.error;
-    
-    let cuentasMap = {};
-    catRes.data.forEach(c => { cuentasMap[c.codigo] = c.id; });
-    
-    // Obtener período desde selector (o fecha actual si no está seleccionado)
-    let xmlGenPer = document.getElementById('xmlGenPeriodo') ? document.getElementById('xmlGenPeriodo').value : '';
-    let anio, mes;
-    if (xmlGenPer && xmlGenPer.indexOf('-') > -1) {
-      let parts = xmlGenPer.split('-');
-      anio = parseInt(parts[0]);
-      mes  = parseInt(parts[1]);
-    } else {
-      let ahora = new Date();
-      anio = ahora.getFullYear();
-      mes  = ahora.getMonth() + 1;
+    var cMap = await ctGetMap(empId);
+    var C = {
+      bancos:  cMap['102-01'], clientes: cMap['105-01'],
+      iva_ac:  cMap['108-01'], prov:     cMap['201-01'],
+      iva_tr:  cMap['216-01'], ing:      cMap['401-01'],
+      gasto:   cMap['601-01']
+    };
+    var anio = new Date().getFullYear(), mes = new Date().getMonth() + 1;
+    var xmlGenPer = document.getElementById('xmlGenPeriodo');
+    if (xmlGenPer && xmlGenPer.value) {
+      var pp = xmlGenPer.value.split('-');
+      anio = parseInt(pp[0]); mes = parseInt(pp[1]);
     }
-    let perRes = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).single();
-    let periodoId;
-    if (perRes.error || !perRes.data) {
-      // Auto-crear período si no existe
-      let newPer = await sb.from('cont_periodos').insert({
-        empresa_id: empId,
-        anio: anio,
-        mes: mes
-      }).select('id').single();
-      if (newPer.error) {
-        alert('Error creando período: ' + newPer.error.message);
-        return;
-      }
-      periodoId = newPer.data.id;
-    } else {
-      periodoId = perRes.data.id;
-    }
-    
-    // Obtener XMLs sin procesar de los lotes de esta empresa
-    let lotesRes = await sb.from('cont_xml_lotes').select('id').eq('empresa_id', empId);
-    let xmlRes = { data: [], error: null };
-    if (!lotesRes.error && lotesRes.data && lotesRes.data.length > 0) {
-      let loteIds = lotesRes.data.map(function(l){ return l.id; });
-      xmlRes = await sb.from('cont_xml_cfdis').select('*').in('lote_id', loteIds).eq('status', 'importado').limit(500);
-      if (xmlRes.error) throw xmlRes.error;
-    }
-    if (!xmlRes.data || xmlRes.data.length === 0) {
-      alert('No hay XMLs sin procesar');
-      btn.disabled = false;
-      btn.textContent = '⚡ Generar desde XML';
-      return;
-    }
-    
-    let contador = 0;
-    let errores = [];
-    
-    // Procesar cada CFDI
-    for (let cfdi of xmlRes.data) {
+    var periodoId = await ctGetOrCreatePeriodo(empId, anio, mes);
+    var lotesR = await sb.from('cont_xml_lotes').select('id').eq('empresa_id', empId);
+    if (lotesR.error) throw lotesR.error;
+    if (!lotesR.data || !lotesR.data.length) { alert('No hay lotes para esta empresa'); return; }
+    var loteIds = lotesR.data.map(function(l) { return l.id; });
+    var xmlR = await sb.from('cont_xml_cfdis').select('*').in('lote_id', loteIds).eq('status', 'importado').limit(500);
+    if (xmlR.error) throw xmlR.error;
+    if (!xmlR.data || !xmlR.data.length) { alert('No hay XMLs pendientes de contabilizar'); return; }
+    var ok = 0, errs = [];
+    for (var i = 0; i < xmlR.data.length; i++) {
+      var cfdi = xmlR.data[i];
       try {
-        // Determinar tipo de póliza y cuentas
-        let tipoPol = 'Diario';
-        if (cfdi.tipo_cfdi === 'ingreso') tipoPol = 'Ingresos';
-        else if (cfdi.tipo_cfdi === 'egreso') tipoPol = 'Egresos';
-        
-        // Obtener número de póliza
-        let tipoPrefix = tipoPol === 'Ingresos' ? 'I' : (tipoPol === 'Egresos' ? 'E' : 'D');
-        let maxRes = await sb.from('cont_polizas').select('numero_poliza', { count: 'exact' }).eq('empresa_id', empId).eq('tipo_poliza', tipoPol).order('numero_poliza', { ascending: false }).limit(1);
-        let nextNum = 1;
-        if (maxRes.data && maxRes.data.length > 0) {
-          let lastNum = parseInt(maxRes.data[0].numero_poliza.split('-')[1]) || 0;
-          nextNum = lastNum + 1;
+        var tc = (cfdi.tipo_cfdi || '').toLowerCase();
+        var tipo = (tc === 'ingreso' || tc === 'i') ? 'Ingresos' : (tc === 'egreso' || tc === 'e') ? 'Egresos' : 'Diario';
+        var total = parseFloat(cfdi.total) || 0;
+        var iva = parseFloat(cfdi.iva_traslado || cfdi.importe_iva || 0);
+        if (!iva && total) iva = Math.round(total * 16 / 116 * 100) / 100;
+        var sub = Math.round((total - iva) * 100) / 100;
+        var fecha = (cfdi.fecha_emision || new Date().toISOString()).slice(0, 10);
+        var folio = await ctNextFolio(empId, tipo);
+        var polR = await sb.from('cont_polizas').insert({
+          empresa_id: empId, periodo_id: periodoId,
+          numero_poliza: folio, tipo_poliza: tipo, fecha_poliza: fecha,
+          concepto: (cfdi.nombre_emisor || 'CFDI') + ' ' + (cfdi.uuid_cfdi || '').slice(0, 8),
+          referencia_xml: cfdi.uuid_cfdi, status: 'borrador',
+          usuario_creo: currentUserRow ? currentUserRow.username : 'sif'
+        }).select('id').single();
+        if (polR.error) { errs.push(polR.error.message); continue; }
+        var polId = polR.data.id;
+        var dets = [];
+        if (tipo === 'Egresos' && C.gasto && C.prov) {
+          dets.push({ poliza_id: polId, renglon_num: 1, cuenta_id: C.gasto.id, concepto_detalle: 'Gasto ' + (cfdi.nombre_emisor || ''), debe: sub, haber: 0, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+          if (iva && C.iva_ac) dets.push({ poliza_id: polId, renglon_num: 2, cuenta_id: C.iva_ac.id, concepto_detalle: 'IVA Acreditable 16%', debe: iva, haber: 0, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+          dets.push({ poliza_id: polId, renglon_num: dets.length + 1, cuenta_id: C.prov.id, concepto_detalle: 'CxP ' + (cfdi.nombre_emisor || ''), debe: 0, haber: total, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+        } else if (tipo === 'Ingresos' && C.clientes && C.ing) {
+          dets.push({ poliza_id: polId, renglon_num: 1, cuenta_id: C.clientes.id, concepto_detalle: 'CxC ' + (cfdi.nombre_emisor || ''), debe: total, haber: 0, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+          dets.push({ poliza_id: polId, renglon_num: 2, cuenta_id: C.ing.id, concepto_detalle: 'Ingreso por servicio', debe: 0, haber: sub, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+          if (iva && C.iva_tr) dets.push({ poliza_id: polId, renglon_num: 3, cuenta_id: C.iva_tr.id, concepto_detalle: 'IVA Trasladado 16%', debe: 0, haber: iva, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+        } else if (C.bancos) {
+          dets.push({ poliza_id: polId, renglon_num: 1, cuenta_id: C.bancos.id, concepto_detalle: cfdi.nombre_emisor || '', debe: total, haber: 0, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
+          dets.push({ poliza_id: polId, renglon_num: 2, cuenta_id: C.bancos.id, concepto_detalle: 'Contrapartida diario', debe: 0, haber: total, moneda: cfdi.moneda || 'MXN', referencia_cfdi: cfdi.uuid_cfdi, usuario_creo: currentUserRow ? currentUserRow.username : 'sif' });
         }
-        let numPoliza = tipoPrefix + '-' + String(nextNum).padStart(3, '0');
-        
-        // Crear póliza
-        let polizaRes = await sb.from('cont_polizas').insert({
-          empresa_id: empId,
-          periodo_id: periodoId,
-          numero_poliza: numPoliza,
-          tipo_poliza: tipoPol,
-          fecha_poliza: cfdi.fecha_emision || new Date().toISOString().split('T')[0],
-          concepto: 'CFDI ' + cfdi.uuid_cfdi + ' de ' + cfdi.nombre_emisor,
-          referencia_xml: cfdi.uuid_cfdi,
-          status: 'borrador',
-          usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
-        }).select().single();
-        
-        if (polizaRes.error) {
-          errores.push('Póliza: ' + polizaRes.error.message);
-          continue;
-        }
-        
-        let polizaId = polizaRes.data.id;
-        
-        // Obtener cuentas (suponiendo 105-01-000 para clientes, 401-01-000 para ingresos)
-        let cuentaCli = cuentasMap['105-01-000'];
-        let cuentaIng = cuentasMap['401-01-000'];
-        let cuentaGas = cuentasMap['501-01-000'];
-        let cuentaProv = cuentasMap['201-01-000'];
-        
-        let detalles = [];
-        
-        if (tipoPol === 'Ingresos' && cuentaCli && cuentaIng) {
-          detalles.push({
-            poliza_id: polizaId,
-            renglon_num: 1,
-            cuenta_id: cuentaCli,
-            concepto_detalle: cfdi.nombre_emisor,
-            debe: cfdi.total,
-            haber: 0,
-            moneda: cfdi.moneda || 'MXN',
-            referencia_cfdi: cfdi.uuid_cfdi,
-            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
-          });
-          detalles.push({
-            poliza_id: polizaId,
-            renglon_num: 2,
-            cuenta_id: cuentaIng,
-            concepto_detalle: 'Ingresos por venta',
-            debe: 0,
-            haber: cfdi.total,
-            moneda: cfdi.moneda || 'MXN',
-            referencia_cfdi: cfdi.uuid_cfdi,
-            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
-          });
-        } else if (tipoPol === 'Egresos' && cuentaProv && cuentaGas) {
-          detalles.push({
-            poliza_id: polizaId,
-            renglon_num: 1,
-            cuenta_id: cuentaGas,
-            concepto_detalle: cfdi.nombre_emisor,
-            debe: cfdi.total,
-            haber: 0,
-            moneda: cfdi.moneda || 'MXN',
-            referencia_cfdi: cfdi.uuid_cfdi,
-            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
-          });
-          detalles.push({
-            poliza_id: polizaId,
-            renglon_num: 2,
-            cuenta_id: cuentaProv,
-            concepto_detalle: 'Cuentas por pagar',
-            debe: 0,
-            haber: cfdi.total,
-            moneda: cfdi.moneda || 'MXN',
-            referencia_cfdi: cfdi.uuid_cfdi,
-            usuario_creo: currentUserRow ? currentUserRow.username : 'unknown'
-          });
-        }
-        
-        if (detalles.length > 0) {
-          let detRes = await sb.from('cont_polizas_detalles').insert(detalles);
-          if (detRes.error) {
-            errores.push('Detalles: ' + detRes.error.message);
-          } else {
-            contador++;
-            // Marcar CFDI como procesado
-            await sb.from('cont_xml_cfdis').update({ status: 'procesado' }).eq('id', cfdi.id);
+        if (dets.length) {
+          var totD = dets.reduce(function(s, d) { return s + d.debe; }, 0);
+          var totH = dets.reduce(function(s, d) { return s + d.haber; }, 0);
+          if (Math.abs(totD - totH) > 0.02) {
+            errs.push('Desequilibrio ' + (cfdi.uuid_cfdi || '').slice(0, 8) + ' D:' + totD + ' H:' + totH);
+            await sb.from('cont_polizas').delete().eq('id', polId);
+            continue;
           }
+          var detR = await sb.from('cont_polizas_detalles').insert(dets);
+          if (detR.error) { errs.push(detR.error.message); continue; }
+          await sb.from('cont_xml_cfdis').update({ status: 'procesado' }).eq('id', cfdi.id);
+          ok++;
         }
-      } catch(e) {
-        errores.push(e.message);
-      }
+      } catch(ex) { errs.push(ex.message); }
     }
-    
-    let msg = '✅ ' + contador + ' pólizas generadas de ' + xmlRes.data.length + ' XMLs';
-    if (errores.length) msg += '\n⚠ ' + errores.length + ' errores';
+    var msg = '\u2705 ' + ok + ' p\u00f3lizas generadas de ' + xmlR.data.length + ' XMLs';
+    if (errs.length) msg += '\n\u26a0\ufe0f ' + errs.length + ' errores:\n' + errs.slice(0, 3).join('\n');
     alert(msg);
-    cargarListaPolizas();
-    
-  } catch(e) {
-    alert('Error: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚡ Generar desde XML';
-  }
+    if (ok) cargarListaPolizas();
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = btnTxt || '\u26a1 Generar desde XML'; } }
 }
+window.generarPolizasDesdeXML = generarPolizasDesdeXML;
+
+// ── Helpers motor contable ─────────────────────────────────────────────────
+
+async function ctGetMap(empId) {
+  var r = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre,tipo,naturaleza,acepta_movimientos').eq('empresa_id', empId).eq('activa', true).order('codigo');
+  if (r.error) throw r.error;
+  var m = {};
+  r.data.forEach(function(c) { m[c.codigo] = c; });
+  return m;
+}
+
+async function ctGetOrCreatePeriodo(empId, anio, mes) {
+  var r = await sb.from('cont_periodos').select('id,estatus').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).maybeSingle();
+  if (r.data) return r.data.id;
+  var ins = await sb.from('cont_periodos').insert({ empresa_id: empId, anio: anio, mes: mes, estatus: 'abierto', fecha_apertura: new Date().toISOString().slice(0, 10) }).select('id').single();
+  if (ins.error) throw ins.error;
+  return ins.data.id;
+}
+
+async function ctNextFolio(empId, tipo) {
+  var pref = { Ingresos: 'I', Egresos: 'E', Diario: 'D' }[tipo] || 'D';
+  var r = await sb.from('cont_polizas').select('numero_poliza').eq('empresa_id', empId).eq('tipo_poliza', tipo).order('numero_poliza', { ascending: false }).limit(1);
+  var n = 1;
+  if (r.data && r.data.length) n = (parseInt((r.data[0].numero_poliza || '').replace(/\D/g, '')) || 0) + 1;
+  return pref + '-' + String(n).padStart(4, '0');
+}
+
+// ── Balanza ────────────────────────────────────────────────────────────────
+
+async function calcularBalanza() {
+  var empSel = document.getElementById('balanzaEmpresa');
+  var perSel = document.getElementById('balanzaPeriodo');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa'); return; }
+  if (!perSel || !perSel.value) { alert('Selecciona per\u00edodo'); return; }
+  var empId = parseInt(empSel.value);
+  var pp = perSel.value.split('-');
+  var anio = parseInt(pp[0]), mes = parseInt(pp[1]);
+  var cont = document.getElementById('balanzaCont');
+  cont.innerHTML = '<p style="color:var(--muted)">Calculando...</p>';
+  try {
+    var periodoId = await ctGetOrCreatePeriodo(empId, anio, mes);
+    var polR = await sb.from('cont_polizas').select('id').eq('empresa_id', empId).eq('periodo_id', periodoId);
+    if (polR.error) throw polR.error;
+    if (!polR.data || !polR.data.length) { cont.innerHTML = '<p>Sin p\u00f3lizas en ese per\u00edodo.</p>'; return; }
+    var polIds = polR.data.map(function(p) { return p.id; });
+    var detR = await sb.from('cont_polizas_detalles').select('cuenta_id,debe,haber').in('poliza_id', polIds);
+    if (detR.error) throw detR.error;
+    var catR = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre,tipo,naturaleza').eq('empresa_id', empId).order('codigo');
+    if (catR.error) throw catR.error;
+    var catMap = {};
+    catR.data.forEach(function(c) { catMap[c.id] = c; });
+    var saldos = {};
+    detR.data.forEach(function(d) {
+      if (!saldos[d.cuenta_id]) saldos[d.cuenta_id] = { debe: 0, haber: 0 };
+      saldos[d.cuenta_id].debe += parseFloat(d.debe) || 0;
+      saldos[d.cuenta_id].haber += parseFloat(d.haber) || 0;
+    });
+    // Upsert balanza
+    for (var cid in saldos) {
+      var s = saldos[cid];
+      await sb.from('cont_balanzas').upsert({
+        empresa_id: empId, periodo_id: periodoId, cuenta_id: parseInt(cid),
+        saldo_inicial_debe: 0, saldo_inicial_haber: 0,
+        cargos_periodo: s.debe, abonos_periodo: s.haber,
+        saldo_final_debe: Math.max(0, s.debe - s.haber),
+        saldo_final_haber: Math.max(0, s.haber - s.debe),
+        origen: 'auto', fecha_actualizacion: new Date().toISOString(),
+        usuario_actualizacion: currentUserRow ? currentUserRow.username : 'sif'
+      }, { onConflict: 'empresa_id,periodo_id,cuenta_id' });
+    }
+    renderBalanza(catR.data, saldos, anio, mes, periodoId, empId);
+  } catch(ex) { cont.innerHTML = '<p style="color:red">Error: ' + ex.message + '</p>'; }
+}
+window.calcularBalanza = calcularBalanza;
+
+function fmt(n) { return (parseFloat(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+var _balCache = { catData: [], saldos: {}, anio: 0, mes: 0, periodoId: 0, empId: 0 };
+
+function renderBalanza(cuentas, saldos, anio, mes, periodoId, empId) {
+  _balCache = { catData: cuentas, saldos: saldos, anio: anio, mes: mes, periodoId: periodoId, empId: empId };
+  var MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  var cont = document.getElementById('balanzaCont');
+  var html = '<h3 style="margin:0 0 12px 0">Balanza de Comprobaci\u00f3n — ' + MESES[mes] + ' ' + anio + '</h3>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
+  html += '<thead><tr style="background:var(--brand);color:#fff"><th style="padding:8px;text-align:left">Cuenta</th><th style="padding:8px;text-align:left">Nombre</th><th style="padding:8px;text-align:right">Cargos</th><th style="padding:8px;text-align:right">Abonos</th><th style="padding:8px;text-align:right">Saldo Deudor</th><th style="padding:8px;text-align:right">Saldo Acreedor</th></tr></thead><tbody>';
+  var totD = 0, totH = 0, totSD = 0, totSA = 0, row = 0;
+  cuentas.forEach(function(ct) {
+    if (!saldos[ct.id]) return;
+    var s = saldos[ct.id];
+    var sd = Math.max(0, s.debe - s.haber), sa = Math.max(0, s.haber - s.debe);
+    totD += s.debe; totH += s.haber; totSD += sd; totSA += sa;
+    var bg = row++ % 2 === 0 ? 'var(--bg)' : 'var(--panel)';
+    html += '<tr style="background:' + bg + '"><td style="padding:6px 8px;font-family:monospace">' + ct.codigo + '</td><td style="padding:6px 8px">' + ct.nombre + '</td><td style="padding:6px 8px;text-align:right">' + fmt(s.debe) + '</td><td style="padding:6px 8px;text-align:right">' + fmt(s.haber) + '</td><td style="padding:6px 8px;text-align:right;color:#1d6f42">' + (sd ? fmt(sd) : '') + '</td><td style="padding:6px 8px;text-align:right;color:#a32d2d">' + (sa ? fmt(sa) : '') + '</td></tr>';
+  });
+  html += '<tr style="background:var(--brand);color:#fff;font-weight:700"><td colspan="2" style="padding:8px">TOTALES</td><td style="padding:8px;text-align:right">' + fmt(totD) + '</td><td style="padding:8px;text-align:right">' + fmt(totH) + '</td><td style="padding:8px;text-align:right">' + fmt(totSD) + '</td><td style="padding:8px;text-align:right">' + fmt(totSA) + '</td></tr>';
+  html += '</tbody></table></div>';
+  var ok = Math.abs(totD - totH) < 0.02 && Math.abs(totSD - totSA) < 0.02;
+  html += '<p style="margin-top:12px;font-weight:600;color:' + (ok ? '#1d6f42' : '#a32d2d') + '">' + (ok ? '\u2705 Balanza cuadrada' : '\u274c Balanza no cuadra \u2014 revisar asientos') + '</p>';
+  cont.innerHTML = html;
+}
+
+// ── Estados Financieros ────────────────────────────────────────────────────
+
+async function calcularEstados() {
+  var empSel = document.getElementById('estadosEmpresa') || document.getElementById('balanzaEmpresa');
+  var perSel = document.getElementById('estadosPeriodo') || document.getElementById('balanzaPeriodo');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa'); return; }
+  if (!perSel || !perSel.value) { alert('Selecciona per\u00edodo'); return; }
+  var empId = parseInt(empSel.value);
+  var pp = perSel.value.split('-');
+  var anio = parseInt(pp[0]), mes = parseInt(pp[1]);
+  var cont = document.getElementById('estadosCont');
+  if (cont) cont.innerHTML = '<p style="color:var(--muted)">Calculando...</p>';
+  try {
+    var perR = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).maybeSingle();
+    if (!perR.data) { if(cont) cont.innerHTML = '<p>Sin per\u00edodo. Genera la balanza primero.</p>'; return; }
+    var perId = perR.data.id;
+    var balR = await sb.from('cont_balanzas').select('*').eq('empresa_id', empId).eq('periodo_id', perId);
+    if (balR.error) throw balR.error;
+    var catR = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre,tipo,naturaleza').eq('empresa_id', empId);
+    if (catR.error) throw catR.error;
+    var catMap = {};
+    catR.data.forEach(function(ct) { catMap[ct.id] = ct; });
+    var balData = (balR.data || []).map(function(b) { return Object.assign({}, b, { cuenta: catMap[b.cuenta_id] || {} }); });
+    renderEstados(balData, anio, mes);
+  } catch(ex) { if(cont) cont.innerHTML = '<p style="color:red">Error: ' + ex.message + '</p>'; }
+}
+window.calcularEstados = calcularEstados;
+
+function renderEstados(balData, anio, mes) {
+  var MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  var grp = { ingreso: [], costo: [], gasto: [], activo: [], pasivo: [], capital: [] };
+  balData.forEach(function(b) { var t = (b.cuenta.tipo || '').toLowerCase(); if (grp[t]) grp[t].push(b); });
+  function saldoN(b) {
+    var n = (b.cuenta.naturaleza || 'D').trim();
+    var sd = parseFloat(b.saldo_final_debe) || 0, sa = parseFloat(b.saldo_final_haber) || 0;
+    return n === 'D' ? sd - sa : sa - sd;
+  }
+  function sum(arr) { return arr.reduce(function(s, b) { return s + saldoN(b); }, 0); }
+  function erow(lbl, val, bold, top, color) {
+    var st = 'display:flex;justify-content:space-between;padding:4px 0;font-size:13px';
+    if (bold) st += ';font-weight:700'; if (top) st += ';border-top:1px solid var(--border)'; if (color) st += ';color:' + color;
+    return '<div style="' + st + '"><span>' + lbl + '</span><span>' + fmt(val) + '</span></div>';
+  }
+  var ing = sum(grp.ingreso), cos = sum(grp.costo), gas = sum(grp.gasto), util = ing - cos - gas;
+  var act = sum(grp.activo), pas = sum(grp.pasivo), cap = sum(grp.capital), capT = cap + util;
+  var banco = 0; grp.activo.forEach(function(b) { if ((b.cuenta.codigo || '').startsWith('102')) banco += saldoN(b); });
+  var cxc = 0; grp.activo.forEach(function(b) { if ((b.cuenta.codigo || '').startsWith('105')) cxc += saldoN(b); });
+  var cxp = 0; grp.pasivo.forEach(function(b) { if ((b.cuenta.codigo || '').startsWith('201')) cxp += saldoN(b); });
+  var cuadreBG = Math.abs(act - (pas + capT)) < 1;
+  var per = MESES[mes] + ' ' + anio;
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+  // ER
+  html += '<div class="card" style="margin:0"><h3 style="margin:0 0 12px 0;color:var(--brand)">\ud83d\udcca Estado de Resultados<br><small style="font-size:11px;color:var(--muted)">' + per + '</small></h3>';
+  html += erow('(+) Ingresos', ing, false, false, '#1d6f42');
+  html += erow('(-) Costo de Ventas', cos);
+  html += erow('Utilidad Bruta', ing - cos, true, true);
+  html += erow('(-) Gastos de Operaci\u00f3n', gas);
+  html += '<hr style="border-color:var(--brand);border-width:2px;margin:6px 0">';
+  html += erow(util >= 0 ? 'UTILIDAD DEL PER\u00cdODO' : 'P\u00c9RDIDA DEL PER\u00cdODO', Math.abs(util), true, false, util >= 0 ? '#1d6f42' : '#a32d2d');
+  if (!ing) html += '<p style="font-size:12px;color:var(--muted);margin-top:8px">\u26a0\ufe0f Sin ingresos registrados en el per\u00edodo</p>';
+  html += '</div>';
+  // BG
+  html += '<div class="card" style="margin:0"><h3 style="margin:0 0 12px 0;color:var(--brand)">\u2696\ufe0f Estado de Posici\u00f3n Financiera<br><small style="font-size:11px;color:var(--muted)">' + per + '</small></h3>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+  html += '<div><b style="color:#1d6f42">ACTIVO</b>';
+  grp.activo.forEach(function(b) { var s = saldoN(b); if (s) html += erow((b.cuenta.nombre || b.cuenta.codigo || ''), s); });
+  html += erow('TOTAL ACTIVO', act, true, true); html += '</div>';
+  html += '<div><b style="color:#a32d2d">PASIVO + CAPITAL</b>';
+  grp.pasivo.forEach(function(b) { var s = saldoN(b); if (s) html += erow((b.cuenta.nombre || b.cuenta.codigo || ''), s); });
+  html += erow('Resultado del per\u00edodo', util);
+  grp.capital.forEach(function(b) { var s = saldoN(b); if (s) html += erow((b.cuenta.nombre || b.cuenta.codigo || ''), s); });
+  html += erow('TOTAL P+C', pas + capT, true, true); html += '</div></div>';
+  html += '<p style="margin-top:8px;font-size:12px;font-weight:700;color:' + (cuadreBG ? '#1d6f42' : '#a32d2d') + '">' + (cuadreBG ? '\u2705 Balance cuadra' : '\u274c Diferencia: ' + fmt(Math.abs(act - pas - capT))) + '</p></div></div>';
+  // EFE
+  html += '<div class="card"><h3 style="margin:0 0 12px 0;color:var(--brand)">\ud83d\udcb0 Estado de Flujo de Efectivo (M\u00e9todo Indirecto)<br><small style="font-size:11px;color:var(--muted)">' + per + '</small></h3>';
+  html += erow('Utilidad / P\u00e9rdida neta', util, false, false, util >= 0 ? '#1d6f42' : '#a32d2d');
+  if (cxc) html += erow('(+/-) Var. Clientes (105)', -cxc);
+  if (cxp) html += erow('(+/-) Var. Proveedores (201)', cxp);
+  html += '<hr style="border-color:var(--brand);border-width:2px;margin:6px 0">';
+  html += erow('Saldo en Bancos (102)', banco, true, false, banco >= 0 ? '#1d6f42' : '#a32d2d');
+  if (!banco && !ing) html += '<p style="font-size:12px;color:var(--muted);margin-top:8px">\u26a0\ufe0f Registra movimientos de banco para ver flujo real</p>';
+  html += '</div>';
+  var cont = document.getElementById('estadosCont');
+  if (cont) cont.innerHTML = html;
+}
+
+// ── Auxiliar Libro Mayor T ─────────────────────────────────────────────────
+
+async function verAuxiliarT() {
+  var empSel = document.getElementById('auxEmpresa');
+  var ctaSel = document.getElementById('auxCuenta');
+  var perSel = document.getElementById('auxPeriodo');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa'); return; }
+  if (!ctaSel || !ctaSel.value) { alert('Selecciona cuenta'); return; }
+  if (!perSel || !perSel.value) { alert('Selecciona per\u00edodo'); return; }
+  var empId = parseInt(empSel.value), ctaId = parseInt(ctaSel.value);
+  var pp = perSel.value.split('-');
+  var anio = parseInt(pp[0]), mes = parseInt(pp[1]);
+  var auxCont = document.getElementById('auxCont');
+  auxCont.innerHTML = '<p style="color:var(--muted)">Cargando...</p>';
+  try {
+    var MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    var perR = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).maybeSingle();
+    if (!perR.data) { auxCont.innerHTML = '<p>Sin per\u00edodo. Genera la balanza primero.</p>'; return; }
+    var perId = perR.data.id;
+    var polR = await sb.from('cont_polizas').select('id,numero_poliza,fecha_poliza,tipo_poliza').eq('empresa_id', empId).eq('periodo_id', perId);
+    if (polR.error) throw polR.error;
+    var polMap = {};
+    (polR.data || []).forEach(function(p) { polMap[p.id] = p; });
+    var polIds = (polR.data || []).map(function(p) { return p.id; });
+    if (!polIds.length) { auxCont.innerHTML = '<p>Sin p\u00f3lizas en ese per\u00edodo.</p>'; return; }
+    var detR = await sb.from('cont_polizas_detalles').select('*').in('poliza_id', polIds).eq('cuenta_id', ctaId).order('poliza_id');
+    if (detR.error) throw detR.error;
+    var ctaR = await sb.from('cont_catalogo_cuentas').select('codigo,nombre,naturaleza').eq('id', ctaId).single();
+    var cta = ctaR.data || { codigo: '', nombre: '', naturaleza: 'D' };
+    var totD = 0, totH = 0, rowsD = '', rowsH = '';
+    (detR.data || []).forEach(function(d) {
+      var pol = polMap[d.poliza_id] || {};
+      var debe = parseFloat(d.debe) || 0, haber = parseFloat(d.haber) || 0;
+      totD += debe; totH += haber;
+      var r = '<tr><td style="padding:4px 8px;font-size:12px">' + (pol.numero_poliza || '') + '</td><td style="padding:4px 8px;font-size:12px">' + (pol.fecha_poliza || '') + '</td><td style="padding:4px 8px;font-size:12px">' + (d.concepto_detalle || '') + '</td>';
+      if (debe) rowsD += r + '<td style="padding:4px 8px;text-align:right;font-weight:600;color:#1d6f42">' + fmt(debe) + '</td></tr>';
+      if (haber) rowsH += r + '<td style="padding:4px 8px;text-align:right;font-weight:600;color:#a32d2d">' + fmt(haber) + '</td></tr>';
+    });
+    var saldo = cta.naturaleza.trim() === 'D' ? totD - totH : totH - totD;
+    var thStyle = 'padding:4px 8px;text-align:left;font-size:12px';
+    var tbl = function(rows, tot, col) { return '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--brand);color:#fff"><th style="' + thStyle + '">P\u00f3liza</th><th style="' + thStyle + '">Fecha</th><th style="' + thStyle + '">Concepto</th><th style="' + thStyle + ';text-align:right">Monto</th></tr></thead><tbody>' + (rows || '<tr><td colspan="4" style="padding:8px;text-align:center;color:var(--muted)">Sin movimientos</td></tr>') + '</tbody><tfoot><tr style="background:var(--border);font-weight:700"><td colspan="3" style="padding:4px 8px">Total</td><td style="padding:4px 8px;text-align:right;color:' + col + '">' + fmt(tot) + '</td></tr></tfoot></table>'; };
+    var html = '<h3 style="margin:0 0 12px 0">Auxiliar: ' + cta.codigo + ' \u2014 ' + cta.nombre + ' | ' + MESES[mes] + ' ' + anio + '</h3>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+    html += '<div><h4 style="color:#1d6f42;text-align:center;margin:0 0 8px 0">DEBE (Cargos)</h4>' + tbl(rowsD, totD, '#1d6f42') + '</div>';
+    html += '<div><h4 style="color:#a32d2d;text-align:center;margin:0 0 8px 0">HABER (Abonos)</h4>' + tbl(rowsH, totH, '#a32d2d') + '</div></div>';
+    html += '<div style="margin-top:12px;padding:10px 16px;background:var(--panel);border-radius:8px;display:flex;gap:24px;font-size:13px"><span><b>Debe:</b> ' + fmt(totD) + '</span><span><b>Haber:</b> ' + fmt(totH) + '</span><span style="font-weight:700;color:' + (saldo >= 0 ? '#1d6f42' : '#a32d2d') + '">Saldo ' + (cta.naturaleza.trim() === 'D' ? 'Deudor' : 'Acreedor') + ': ' + fmt(Math.abs(saldo)) + '</span></div>';
+    auxCont.innerHTML = html;
+  } catch(ex) { auxCont.innerHTML = '<p style="color:red">Error: ' + ex.message + '</p>'; }
+}
+window.verAuxiliarT = verAuxiliarT;
+
+async function auxCargarCuentas() {
+  var empSel = document.getElementById('auxEmpresa');
+  var ctaSel = document.getElementById('auxCuenta');
+  if (!empSel || !empSel.value || !ctaSel) return;
+  var r = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', parseInt(empSel.value)).eq('acepta_movimientos', true).order('codigo');
+  ctaSel.innerHTML = '<option value="">\u2014 Cuenta \u2014</option>';
+  if (r.data) r.data.forEach(function(ct) { ctaSel.innerHTML += '<option value="' + ct.id + '">' + ct.codigo + ' \u2014 ' + ct.nombre + '</option>'; });
+}
+window.auxCargarCuentas = auxCargarCuentas;
+
+// ── ContPAQ i TXT ──────────────────────────────────────────────────────────
+
+async function exportarContPAQ() {
+  var empSel = document.getElementById('balanzaEmpresa') || document.getElementById('estadosEmpresa');
+  var perSel = document.getElementById('balanzaPeriodo') || document.getElementById('estadosPeriodo');
+  if (!empSel || !empSel.value) { alert('Selecciona empresa en Balanzas o Estados'); return; }
+  if (!perSel || !perSel.value) { alert('Selecciona per\u00edodo'); return; }
+  var empId = parseInt(empSel.value);
+  var pp = perSel.value.split('-');
+  var anio = parseInt(pp[0]), mes = parseInt(pp[1]);
+  var MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  try {
+    var perR = await sb.from('cont_periodos').select('id').eq('empresa_id', empId).eq('anio', anio).eq('mes', mes).maybeSingle();
+    if (!perR.data) { alert('Sin per\u00edodo'); return; }
+    var polR = await sb.from('cont_polizas').select('*').eq('empresa_id', empId).eq('periodo_id', perR.data.id).order('numero_poliza');
+    if (polR.error) throw polR.error;
+    if (!polR.data || !polR.data.length) { alert('Sin p\u00f3lizas en el per\u00edodo'); return; }
+    var catR = await sb.from('cont_catalogo_cuentas').select('id,codigo').eq('empresa_id', empId);
+    var catMap = {};
+    (catR.data || []).forEach(function(ct) { catMap[ct.id] = ct; });
+    var lineas = [];
+    for (var i = 0; i < polR.data.length; i++) {
+      var pol = polR.data[i];
+      var tn = pol.tipo_poliza === 'Ingresos' ? '1' : pol.tipo_poliza === 'Egresos' ? '2' : '3';
+      var folio = (pol.numero_poliza || '').replace(/\D/g, '') || String(i + 1);
+      var fecha = (pol.fecha_poliza || new Date().toISOString().slice(0, 10)).replace(/-/g, '');
+      var concepto = (pol.concepto || '').replace(/\|/g, ' ').slice(0, 60);
+      lineas.push('C|' + tn + '|' + folio + '|' + fecha + '|' + concepto);
+      var detR = await sb.from('cont_polizas_detalles').select('*').eq('poliza_id', pol.id).order('renglon_num');
+      if (detR.data) detR.data.forEach(function(d) {
+        var cod = ((catMap[d.cuenta_id] || {}).codigo || '000').replace(/-/g, '.');
+        var desc = (d.concepto_detalle || '').replace(/\|/g, ' ').slice(0, 40);
+        var debe = parseFloat(d.debe) || 0, haber = parseFloat(d.haber) || 0;
+        if (debe > 0) lineas.push('M|' + cod + '|1|' + debe.toFixed(2) + '|' + desc);
+        if (haber > 0) lineas.push('M|' + cod + '|2|' + haber.toFixed(2) + '|' + desc);
+      });
+    }
+    var blob = new Blob([lineas.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'Polizas_' + MESES[mes] + anio + '_emp' + empId + '.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('\u2705 TXT generado: ' + lineas.length + ' l\u00edneas (' + polR.data.length + ' p\u00f3lizas)');
+  } catch(ex) { alert('Error: ' + ex.message); }
+}
+window.exportarContPAQ = exportarContPAQ;
+
+// ── Cargar selects de empresa/periodo ─────────────────────────────────────
+
+async function cargarPeriodosEn(selectorId, empId) {
+  var sel = document.getElementById(selectorId);
+  if (!sel || !empId) return;
+  var MESES = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  var r = await sb.from('cont_periodos').select('anio,mes').eq('empresa_id', parseInt(empId)).order('anio', { ascending: false }).order('mes', { ascending: false }).limit(24);
+  sel.innerHTML = '<option value="">\u2014 Per\u00edodo \u2014</option>';
+  if (r.data) r.data.forEach(function(p) { sel.innerHTML += '<option value="' + p.anio + '-' + p.mes + '">' + MESES[p.mes] + ' ' + p.anio + '</option>'; });
+}
+window.cargarPeriodosEn = cargarPeriodosEn;
+
+async function initReportSelects() {
+  var empIds = ['balanzaEmpresa', 'estadosEmpresa', 'auxEmpresa'];
+  var r = await sb.from('cont_empresas').select('id,nombre_corto').order('nombre_corto');
+  if (r.error || !r.data) return;
+  empIds.forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">\u2014 Empresa \u2014</option>';
+    r.data.forEach(function(e) { sel.innerHTML += '<option value="' + e.id + '">' + e.nombre_corto + '</option>'; });
+  });
+}
+
 
 async function bootstrapAuth() {
   try {
@@ -1165,6 +1406,7 @@ async function bootstrapAuth() {
 
     applyI18n();
     aplicarRBAC();
+    initReportSelects();
 
     console.log('%c SIF-Contabilidad v' + APP_VERSION + ' | ' + username + ' | ' + currentUserRol + ' ',
       'background:#002855;color:#fff;padding:4px 8px;border-radius:4px;');
