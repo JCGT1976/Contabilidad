@@ -662,7 +662,8 @@ function actualizarTotales() {
   document.getElementById('polizaDiferencia').style.color = diffColor;
 }
 
-document.getElementById('polizaForm').addEventListener('submit', async function(e) {
+var _polizaFormEl = document.getElementById('polizaForm');
+if (_polizaFormEl) _polizaFormEl.addEventListener('submit', async function(e) {
   e.preventDefault();
   
   let empId = parseInt(document.getElementById('polizaEmpresa').value);
@@ -764,6 +765,7 @@ document.getElementById('polizaForm').addEventListener('submit', async function(
   alert('✅ Póliza #' + numPoliza + ' guardada en borrador');
   cerrarModalPoliza();
   cargarListaPolizas();
+
 });
 
 async function cargarEmpresasEnSelectores() {
