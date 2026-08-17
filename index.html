@@ -219,6 +219,15 @@
   .btn-primary:hover{background:var(--brand)}
   .btn-primary:disabled{opacity:.6;cursor:not-allowed}
 
+
+  .proc-btn {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:20px 12px;border:none;border-radius:12px;color:#fff;
+    cursor:pointer;transition:transform .15s,opacity .15s;min-height:100px;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+  }
+  .proc-btn:hover{transform:translateY(-2px);opacity:.92;}
+  .proc-btn:active{transform:scale(.97);}
 </style>
 </head>
 <body>
@@ -361,7 +370,7 @@
 
 <script>
 // ==================== APP_VERSION (bump obligatorio en cada push) ====================
-const APP_VERSION = '2026.08.12.8';
+const APP_VERSION = '2026.08.17.1';
 
 // ==================== Supabase ====================
 const SUPABASE_URL = 'https://nzrzrbatcmzcmrmyrama.supabase.co';
@@ -1715,6 +1724,8 @@ setInterval(checkForUpdates, 5 * 60 * 1000); // cada 5 min
 // ==================== Init ====================
 bootstrapAuth();
 
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════
 // AMIR — Panel de Control (empresa_id = 6)
 // ═══════════════════════════════════════════════════════════════
@@ -2096,6 +2107,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var hoy=new Date(), inp=document.getElementById('amirPeriodo');
   if (inp) { inp.value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0'); amirPeriodoChange(); }
 });
+
 
 </script>
 </body>
