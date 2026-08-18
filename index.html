@@ -2045,10 +2045,14 @@ async function amirGenerarPolizas() {
     for (var i=0;i<xmlR.data.length;i++) {
       var cfdi=xmlR.data[i];
       try {
-        var tc=(cfdi.tipo_cfdi||'').toLowerCase();
-        var tipo=(tc==='ingreso'||tc==='i')?'Ingresos':(tc==='egreso'||tc==='e')?'Egresos':'Diario';
+        var tc=(cfdi.tipo_cfdi||'').toLowerCase().trim();
+        // Amir PF: char(1) 'E'/'I' o texto — default Egresos si no es explicitamente Ingreso
+        var tipo=(tc==='ingreso'||tc==='i')?'Ingresos':'Egresos';
         var total=parseFloat(cfdi.total)||0;
-        var iva=Math.round(total*16/116*100)/100; // computed — iva_traslado not in schema
+        // IVA: verificar si el total implica IVA (total > subtotal*1.04 aprox)
+        var ivaImp = Math.round(total*16/116*100)/100;
+        // Si el emisor es banco, puede no llevar IVA en comisiones — se calcula igual
+        var iva = ivaImp; // computed from total — no iva_traslado column in schema
         var sub=Math.round((total-iva)*100)/100;
         var fecha=(cfdi.fecha_emision||new Date().toISOString()).slice(0,10);
         var folio=await ctNextFolio(AMIR_ID,tipo);
