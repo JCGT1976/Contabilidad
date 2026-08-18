@@ -2020,10 +2020,12 @@ async function amirGenerarPolizas() {
         var polR=await sb.from('cont_polizas').insert({empresa_id:AMIR_ID,periodo_id:periodoId,numero_poliza:folio,tipo_poliza:tipo,fecha_poliza:fecha,concepto:(cfdi.nombre_emisor||'CFDI')+' '+(cfdi.uuid_cfdi||'').slice(0,8),referencia_xml:cfdi.uuid_cfdi,status:'borrador',usuario_creo:currentUserRow?currentUserRow.username:'sif'}).select('id').single();
         if (polR.error) { errs.push(polR.error.message); continue; }
         var polId=polR.data.id, dets=[];
-        if (tipo==='Egresos'&&C.gasto&&C.prov) {
-          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.gasto.id,concepto_detalle:'Gasto '+(cfdi.nombre_emisor||''),debe:sub,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
-          if (iva&&C.iva_ac) dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.iva_ac.id,concepto_detalle:'IVA Acreditable 16%',debe:iva,haber:0,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
-          dets.push({poliza_id:polId,renglon_num:dets.length+1,cuenta_id:C.prov.id,concepto_detalle:'CxP '+(cfdi.nombre_emisor||''),debe:0,haber:total,moneda:cfdi.moneda||'MXN',referencia_cfdi:cfdi.uuid_cfdi,usuario_creo:currentUserRow?currentUserRow.username:'sif'});
+        if (tipo==='Egresos'&&C.gasto&&C.bancos) {
+          // Base efectivo (Art.115 LISR) — abono directo a banco
+          var uc2=currentUserRow?currentUserRow.username:'sif', mn2=cfdi.moneda||'MXN', ux2=cfdi.uuid_cfdi;
+          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.gasto.id,concepto_detalle:(cfdi.nombre_emisor||'').slice(0,50),debe:sub,haber:0,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
+          if (iva&&C.iva_ac) dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.iva_ac.id,concepto_detalle:'IVA Acreditable 16%',debe:iva,haber:0,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
+          dets.push({poliza_id:polId,renglon_num:dets.length+1,cuenta_id:C.bancos.id,concepto_detalle:'Pago '+(cfdi.nombre_emisor||'').slice(0,40),debe:0,haber:total,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
         } else if (tipo==='Ingresos') {
           // Arrendamiento PF: solo contabilizar si es CFDI de ingreso fiscal emitido por Amir
           // Los ingresos no fiscalizados no generan poliza — se omiten
@@ -2051,19 +2053,153 @@ async function amirGenerarPolizas() {
   finally { btn.style.opacity='1'; btn.disabled=false; btn.innerHTML=orig; }
 }
 window.amirGenerarPolizas = amirGenerarPolizas;
+// ═══════════════════════════════════════════════════════════
+// VISOR DE PÓLIZAS — Estilo CONTPAQi, colores institucionales
+// Base efectivo (Art. 115 LISR) · Amir Tafreshi PF Arrend.
+// ═══════════════════════════════════════════════════════════
+
 async function amirCargarPolizas() {
-  var per=amirGetPeriodo(); if (!per) return;
-  var cont=document.getElementById('amirPolizasCont');
-  var perR=await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
-  if (!perR.data) { cont.innerHTML='<p>Sin per\u00edodo.</p>'; return; }
-  var r=await sb.from('cont_polizas').select('numero_poliza,tipo_poliza,fecha_poliza,concepto,status').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id).order('numero_poliza');
-  if (r.error||!r.data||!r.data.length) { cont.innerHTML='<p style="color:var(--muted)">Sin p\u00f3lizas.</p>'; return; }
-  var html='<p style="font-size:13px;color:#1d6f42;font-weight:600;margin-bottom:8px">\u2705 '+r.data.length+' p\u00f3lizas</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--brand);color:#fff"><th style="padding:7px 10px;text-align:left">Folio</th><th style="padding:7px 10px;text-align:left">Tipo</th><th style="padding:7px 10px;text-align:left">Fecha</th><th style="padding:7px 10px;text-align:left">Concepto</th><th style="padding:7px 10px">Status</th></tr></thead><tbody>';
-  r.data.forEach(function(p,i){ html+='<tr style="background:'+(i%2?'var(--bg)':'var(--panel)')+'"><td style="padding:6px 10px;font-family:monospace">'+p.numero_poliza+'</td><td style="padding:6px 10px">'+p.tipo_poliza+'</td><td style="padding:6px 10px">'+p.fecha_poliza+'</td><td style="padding:6px 10px">'+(p.concepto||'').slice(0,50)+'</td><td style="padding:6px 10px;text-align:center"><span style="padding:2px 8px;border-radius:10px;font-size:11px;background:'+(p.status==='borrador'?'#fef3c7':'#d1fae5')+';color:'+(p.status==='borrador'?'#92400e':'#065f46')+'">'+p.status+'</span></td></tr>'; });
-  html+='</tbody></table></div>';
-  cont.innerHTML=html;
+  var per = amirGetPeriodo(); if (!per) return;
+  var cont = document.getElementById('amirPolizasCont');
+  cont.innerHTML = '<p style="color:var(--muted);font-size:13px">Cargando...</p>';
+  var perR = await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
+  if (!perR.data) { cont.innerHTML='<p style="color:var(--muted);font-size:13px">Sin per\u00edodo. Genera p\u00f3lizas primero.</p>'; return; }
+  var r = await sb.from('cont_polizas').select('id,numero_poliza,tipo_poliza,fecha_poliza,concepto,status').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id).order('numero_poliza');
+  if (r.error||!r.data||!r.data.length) { cont.innerHTML='<p style="color:var(--muted);font-size:13px">Sin p\u00f3lizas en el per\u00edodo.</p>'; return; }
+  var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+  html += '<h3 style="margin:0;color:#002855;font-size:15px">' + r.data.length + ' p\u00f3lizas \u2014 ' + MESES[per.mes] + ' ' + per.anio + '</h3>';
+  html += '<span style="font-size:12px;color:#6b8ab8">Base de Efectivo \u00b7 Art. 115 LISR</span></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px">';
+  r.data.forEach(function(p) {
+    var tipoBg  = p.tipo_poliza==='Ingresos'?'#1d6f42':p.tipo_poliza==='Egresos'?'#185fa5':'#7c3aed';
+    var tipoLbl = p.tipo_poliza==='Ingresos'?'I':p.tipo_poliza==='Egresos'?'E':'D';
+    var stColor = p.status==='borrador'?'#92400e':'#065f46';
+    var stBg    = p.status==='borrador'?'#fef3c7':'#d1fae5';
+    html += '<div style="display:grid;grid-template-columns:36px 80px 90px 1fr auto auto;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid #d0dff5;border-radius:8px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#185fa5\';this.style.background=\'#f0f5ff\'" onmouseout="this.style.borderColor=\'#d0dff5\';this.style.background=\'#fff\'" onclick="amirVerPoliza(\'' + p.id + '\')">';
+    html += '<span style="width:32px;height:32px;border-radius:6px;background:'+tipoBg+';color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">'+tipoLbl+'</span>';
+    html += '<span style="font-family:monospace;font-size:13px;font-weight:700;color:#002855">'+p.numero_poliza+'</span>';
+    html += '<span style="font-size:12px;color:#6b8ab8">'+p.fecha_poliza+'</span>';
+    html += '<span style="font-size:13px;color:#002855;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(p.concepto||'').slice(0,60)+'</span>';
+    html += '<span style="padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;background:'+stBg+';color:'+stColor+'">'+p.status+'</span>';
+    html += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#185fa5" style="width:16px;height:16px"><polyline points="9 18 15 12 9 6"/></svg>';
+    html += '</div>';
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+  window._amirPolizaIds = r.data.map(function(p){return p.id;});
 }
 window.amirCargarPolizas = amirCargarPolizas;
+
+async function amirVerPoliza(polizaId) {
+  var cont = document.getElementById('amirPolizasCont');
+  // Insert detail panel above the list
+  var detDiv = document.getElementById('amirPolizaDetalle');
+  if (!detDiv) {
+    var d = document.createElement('div');
+    d.id = 'amirPolizaDetalle';
+    cont.parentNode.insertBefore(d, cont);
+    detDiv = d;
+  }
+  detDiv.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:16px">Cargando detalle...</p>';
+
+  try {
+    var polR = await sb.from('cont_polizas').select('*').eq('id', polizaId).single();
+    var pol = polR.data;
+    var detR = await sb.from('cont_polizas_detalles').select('*').eq('poliza_id', polizaId).order('renglon_num');
+    var catR = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre').eq('empresa_id', AMIR_ID);
+    var catMap = {}; (catR.data||[]).forEach(function(ct){catMap[ct.id]=ct;});
+    var dets = detR.data || [];
+    var totD = dets.reduce(function(s,d){return s+parseFloat(d.debe||0);},0);
+    var totH = dets.reduce(function(s,d){return s+parseFloat(d.haber||0);},0);
+    var cuadra = Math.abs(totD-totH)<0.02;
+
+    var tipoColor = pol.tipo_poliza==='Ingresos'?'#1d6f42':pol.tipo_poliza==='Egresos'?'#002855':'#7c3aed';
+    var tipoChar  = pol.tipo_poliza==='Ingresos'?'I':pol.tipo_poliza==='Egresos'?'E':'D';
+
+    var html = '<div style="border:1.5px solid #185fa5;border-radius:10px;overflow:hidden;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,40,85,.12)">';
+
+    // ── Header barra azul oscuro ─────────────────────────────
+    html += '<div style="background:#002855;padding:12px 18px;display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:16px">';
+    html += '<span style="width:36px;height:36px;border-radius:7px;background:'+tipoColor+';border:2px solid rgba(255,255,255,.3);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center">'+tipoChar+'</span>';
+    html += '<span style="color:#fff;font-family:monospace;font-size:16px;font-weight:700">'+pol.numero_poliza+'</span>';
+    html += '<span style="color:rgba(255,255,255,.85);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(pol.concepto||'')+'</span>';
+    html += '<span style="color:rgba(255,255,255,.7);font-size:12px">'+pol.fecha_poliza+'</span>';
+    html += '<button onclick="document.getElementById(\'amirPolizaDetalle\').innerHTML=\'\'" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">\u2715 Cerrar</button>';
+    html += '</div>';
+
+    // ── Tabla asientos ───────────────────────────────────────
+    html += '<div style="background:#fff;overflow-x:auto">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    html += '<thead><tr style="background:#e8f0fb;color:#002855">';
+    html += '<th style="padding:8px 10px;text-align:center;width:36px;font-weight:700">No.</th>';
+    html += '<th style="padding:8px 10px;text-align:left;font-weight:700">Cuenta</th>';
+    html += '<th style="padding:8px 10px;text-align:left;font-weight:700">Nombre</th>';
+    html += '<th style="padding:8px 10px;text-align:right;font-weight:700">Cargo</th>';
+    html += '<th style="padding:8px 10px;text-align:right;font-weight:700">Abono</th>';
+    html += '<th style="padding:8px 10px;text-align:left;font-weight:700">Referencia</th>';
+    html += '</tr></thead><tbody>';
+
+    dets.forEach(function(d, i) {
+      var ct = catMap[d.cuenta_id]||{codigo:'???',nombre:'Cuenta desconocida'};
+      var debe = parseFloat(d.debe)||0, haber = parseFloat(d.haber)||0;
+      var bg = i%2===0?'#fff':'#f7faff';
+      html += '<tr style="background:'+bg+';border-bottom:1px solid #e8f0fb">';
+      html += '<td style="padding:7px 10px;text-align:center;color:#6b8ab8;font-weight:600">'+(i+1)+'</td>';
+      html += '<td style="padding:7px 10px;font-family:monospace;font-weight:700;color:#002855">'+ct.codigo+'</td>';
+      html += '<td style="padding:7px 10px;color:#1a2e4a">'+ct.nombre+'</td>';
+      html += '<td style="padding:7px 10px;text-align:right;font-weight:600;color:'+(debe?'#1d6f42':'#ccc')+'">'+(debe?fmt(debe):'')+'</td>';
+      html += '<td style="padding:7px 10px;text-align:right;font-weight:600;color:'+(haber?'#a32d2d':'#ccc')+'">'+(haber?fmt(haber):'')+'</td>';
+      html += '<td style="padding:7px 10px;font-size:11px;color:#6b8ab8;font-family:monospace">'+(d.referencia_cfdi||'').slice(0,18)+'</td>';
+      html += '</tr>';
+    });
+
+    // ── Sumas iguales ────────────────────────────────────────
+    html += '<tr style="background:#002855;color:#fff;font-weight:700">';
+    html += '<td colspan="3" style="padding:9px 10px;text-align:right;letter-spacing:.05em">SUMAS IGUALES</td>';
+    html += '<td style="padding:9px 10px;text-align:right;font-size:14px">'+fmt(totD)+'</td>';
+    html += '<td style="padding:9px 10px;text-align:right;font-size:14px">'+fmt(totH)+'</td>';
+    html += '<td style="padding:9px 10px;text-align:center">';
+    html += cuadra ? '<span style="color:#6ee7b7;font-size:16px">\u2714</span>' : '<span style="color:#fca5a5;font-size:16px">\u2718</span>';
+    html += '</td></tr>';
+    html += '</tbody></table></div>';
+
+    // ── CFDI Relacionado ─────────────────────────────────────
+    var cfdiR = await sb.from('cont_xml_cfdis').select('uuid_cfdi,tipo_cfdi,fecha_emision,rfc_emisor,nombre_emisor,total,moneda').eq('uuid_cfdi', pol.referencia_xml||'x').maybeSingle();
+    if (cfdiR.data) {
+      var cf = cfdiR.data;
+      html += '<div style="background:#f0f5ff;padding:10px 14px;border-top:1px solid #d0dff5">';
+      html += '<div style="font-size:11px;font-weight:700;color:#185fa5;margin-bottom:6px;letter-spacing:.05em">CFDI RELACIONADO</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
+      var cfCols = [
+        ['Tipo',      cf.tipo_cfdi||''],
+        ['Fecha',     cf.fecha_emision||''],
+        ['RFC',       cf.rfc_emisor||''],
+        ['Raz\u00f3n Social', (cf.nombre_emisor||'').slice(0,30)],
+        ['Total',     fmt(cf.total)],
+        ['Moneda',    cf.moneda||'MXN'],
+      ];
+      cfCols.forEach(function(col) {
+        html += '<div style="background:#fff;border:1px solid #d0dff5;border-radius:6px;padding:5px 8px">';
+        html += '<div style="font-size:10px;color:#6b8ab8;font-weight:600">'+col[0]+'</div>';
+        html += '<div style="font-size:12px;font-weight:600;color:#002855">'+col[1]+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '<div style="margin-top:8px;font-size:10px;font-family:monospace;color:#6b8ab8">UUID: '+cf.uuid_cfdi+'</div>';
+      html += '</div>';
+    }
+
+    html += '</div>'; // cierra container
+
+    detDiv.innerHTML = html;
+    detDiv.scrollIntoView({behavior:'smooth',block:'start'});
+  } catch(ex) {
+    detDiv.innerHTML = '<p style="color:red;padding:16px">Error: '+ex.message+'</p>';
+  }
+}
+window.amirVerPoliza = amirVerPoliza;
+
 async function amirBalanza() {
   var per=amirGetPeriodo(); if (!per) return;
   var btn=document.getElementById('btnBalanza'), orig=btn.innerHTML;
