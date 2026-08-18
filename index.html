@@ -1998,6 +1998,25 @@ async function amirCargarLotes() {
   html+='</tbody></table>';
   cont.innerHTML=html;
 }
+
+// ── Mapa RFC → Cuenta de Gasto (Amir PF Arrendamiento) ───────────────────
+var AMIR_RFC_GASTO = {
+  'BSM970519DU8': '601-07', // Banco Santander — Comisiones Bancarias
+  'MEL870626U16': '601-02', // Material Eléctrico Llanas — Mantenimiento
+  'HDM001017AS1': '601-02', // Home Depot — Mantenimiento y Conservación
+  'VMI160309C23': '601-02', // VMINGO — Mantenimiento
+  'ELE040513KJ2': '601-02', // Electrofisa — Mantenimiento
+  'QHC161125C57': '601-02', // Quanzhou Huilin — Mantenimiento (importación)
+  'ANE140618P37': '601-02', // Amazon México — Mantenimiento
+  'CARI650815950':'601-04', // José Iván Cardona Ramírez — Honorarios Administración
+  'BAG040224UJ5': '601-02', // Bellas Artes Gasolinera — Mantenimiento
+};
+
+function amirGastoCuenta(cMap, rfcEmisor) {
+  var cod = AMIR_RFC_GASTO[rfcEmisor] || '601-01';
+  return cMap[cod] || cMap['601-01'];
+}
+
 async function amirGenerarPolizas() {
   var per = amirGetPeriodo(); if (!per) return;
   var btn = document.getElementById('btnPolizas');
@@ -2013,7 +2032,7 @@ async function amirGenerarPolizas() {
       prov:    cMap['201-01'],  // Proveedores
       iva_tr:  cMap['216-01'],  // IVA Trasladado
       ing:     cMap['401-01'],  // Ingresos Arrendamiento
-      gasto:   cMap['601-01']   // Gastos deducibles (default: predial)
+      gasto:   cMap['601-01']   // Default — se sobreescribe por RFC
     };
     var periodoId = await ctGetOrCreatePeriodo(AMIR_ID, per.anio, per.mes);
     var lotesR = await sb.from('cont_xml_lotes').select('id').eq('empresa_id',AMIR_ID);
@@ -2036,10 +2055,11 @@ async function amirGenerarPolizas() {
         var polR=await sb.from('cont_polizas').insert({empresa_id:AMIR_ID,periodo_id:periodoId,numero_poliza:folio,tipo_poliza:tipo,fecha_poliza:fecha,concepto:(cfdi.nombre_emisor||'CFDI')+' '+(cfdi.uuid_cfdi||'').slice(0,8),referencia_xml:cfdi.uuid_cfdi,status:'borrador',usuario_creo:currentUserRow?currentUserRow.username:'sif'}).select('id').single();
         if (polR.error) { errs.push(polR.error.message); continue; }
         var polId=polR.data.id, dets=[];
-        if (tipo==='Egresos'&&C.gasto&&C.bancos) {
-          // Base efectivo (Art.115 LISR) — abono directo a banco
+        if (tipo==='Egresos'&&C.bancos) {
+          // Base efectivo (Art.115 LISR) — RFC determina cuenta de gasto
+          var ctaGasto = amirGastoCuenta(cMap, cfdi.rfc_emisor||'');
           var uc2=currentUserRow?currentUserRow.username:'sif', mn2=cfdi.moneda||'MXN', ux2=cfdi.uuid_cfdi;
-          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:C.gasto.id,concepto_detalle:(cfdi.nombre_emisor||'').slice(0,50),debe:sub,haber:0,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
+          dets.push({poliza_id:polId,renglon_num:1,cuenta_id:ctaGasto.id,concepto_detalle:(cfdi.nombre_emisor||'').slice(0,50),debe:sub,haber:0,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2,nif_aplicada:ctaGasto.codigo});
           if (iva&&C.iva_ac) dets.push({poliza_id:polId,renglon_num:2,cuenta_id:C.iva_ac.id,concepto_detalle:'IVA Acreditable 16%',debe:iva,haber:0,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
           dets.push({poliza_id:polId,renglon_num:dets.length+1,cuenta_id:C.bancos.id,concepto_detalle:'Pago '+(cfdi.nombre_emisor||'').slice(0,40),debe:0,haber:total,moneda:mn2,referencia_cfdi:ux2,usuario_creo:uc2});
         } else if (tipo==='Ingresos') {
@@ -2148,7 +2168,8 @@ async function amirVerPoliza(polizaId) {
         var t0  = parseFloat(cf0.total) || 0;
         var iv0 = Math.round(t0*16/116*100)/100;
         var sb0 = Math.round((t0-iv0)*100)/100;
-        var gastoId  = Object.keys(catMap).find(function(k){return catMap[k].codigo==='601-01';});
+        var gastoCod = AMIR_RFC_GASTO[cf0.rfc_emisor||''] || '601-01';
+        var gastoId  = Object.keys(catMap).find(function(k){return catMap[k].codigo===gastoCod;}) || Object.keys(catMap).find(function(k){return catMap[k].codigo==='601-01';});
         var ivaId    = Object.keys(catMap).find(function(k){return catMap[k].codigo==='108-01';});
         var bancoId  = Object.keys(catMap).find(function(k){return catMap[k].codigo==='102-01';});
         if (gastoId) dets.push({renglon_num:1,cuenta_id:parseInt(gastoId),debe:sb0,haber:0,referencia_cfdi:pol.referencia_xml,concepto_detalle:cf0.nombre_emisor||''});
