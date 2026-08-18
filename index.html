@@ -2140,6 +2140,22 @@ async function amirVerPoliza(polizaId) {
     var catMap = {};
     (catR.data||[]).forEach(function(ct){ catMap[ct.id] = ct; });
 
+    // Si no hay detalles, computar desde CFDI (fallback)
+    if (!dets.length && pol.referencia_xml) {
+      var cfdiQ = await sb.from('cont_xml_cfdis').select('*').eq('uuid_cfdi', pol.referencia_xml).maybeSingle();
+      if (cfdiQ.data) {
+        var cf0 = cfdiQ.data;
+        var t0  = parseFloat(cf0.total) || 0;
+        var iv0 = Math.round(t0*16/116*100)/100;
+        var sb0 = Math.round((t0-iv0)*100)/100;
+        var gastoId  = Object.keys(catMap).find(function(k){return catMap[k].codigo==='601-01';});
+        var ivaId    = Object.keys(catMap).find(function(k){return catMap[k].codigo==='108-01';});
+        var bancoId  = Object.keys(catMap).find(function(k){return catMap[k].codigo==='102-01';});
+        if (gastoId) dets.push({renglon_num:1,cuenta_id:parseInt(gastoId),debe:sb0,haber:0,referencia_cfdi:pol.referencia_xml,concepto_detalle:cf0.nombre_emisor||''});
+        if (iv0&&ivaId) dets.push({renglon_num:2,cuenta_id:parseInt(ivaId),debe:iv0,haber:0,referencia_cfdi:pol.referencia_xml,concepto_detalle:'IVA Acreditable 16%'});
+        if (bancoId) dets.push({renglon_num:3,cuenta_id:parseInt(bancoId),debe:0,haber:t0,referencia_cfdi:pol.referencia_xml,concepto_detalle:'Pago '+(cf0.nombre_emisor||'').slice(0,40)});
+      }
+    }
     var totD = dets.reduce(function(s,d){ return s + (parseFloat(d.debe)||0); }, 0);
     var totH = dets.reduce(function(s,d){ return s + (parseFloat(d.haber)||0); }, 0);
     var cuadra = Math.abs(totD - totH) < 0.02;
