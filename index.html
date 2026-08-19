@@ -2512,8 +2512,9 @@ async function amirVerAuxiliar() {
       html += '<span style="font-size:11px;opacity:.8">Saldo ' + (cta.naturaleza.trim()==='D'?'Deudor':'Acreedor') + ': ' + fmt(Math.abs(saldo)) + '</span>';
       html += '</div>';
       // Tabla de movimientos
-      html += '<table style="width:100%;border-collapse:collapse">';
-      html += '<thead><tr style="background:#e8f0fb"><th style="'+th+'">Póliza</th><th style="'+th+'">Fecha</th><th style="'+th+'">Concepto</th><th style="'+th+';text-align:right;color:#1d6f42">Debe</th><th style="'+th+';text-align:right;color:#a32d2d">Haber</th><th style="'+th+';text-align:right">Saldo</th></tr></thead><tbody>';
+      html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">';
+      html += '<colgroup><col style="width:90px"><col style="width:80px"><col><col style="width:110px"><col style="width:110px"><col style="width:110px"></colgroup>';
+      html += '<thead><tr style="background:#e8f0fb"><th style="'+th+'">P\u00f3liza</th><th style="'+th+'">Fecha</th><th style="'+th+'">Concepto</th><th style="'+th+';text-align:right;color:#1d6f42">Debe</th><th style="'+th+';text-align:right;color:#a32d2d">Haber</th><th style="'+th+';text-align:right">Saldo</th></tr></thead><tbody>';
       var saldoAcum = 0;
       data.detalles.forEach(function(d) {
         var pol  = polMap[d.poliza_id] || {};
@@ -2537,12 +2538,17 @@ async function amirVerAuxiliar() {
       html += '</tr></tbody></table></div>';
     });
 
-    // Gran total
-    html += '<div style="background:#002855;color:#fff;padding:10px 16px;border-radius:8px;display:flex;gap:30px;font-size:13px;font-weight:700">';
-    html += '<span>GRAN TOTAL</span>';
-    html += '<span>Debe: ' + fmt(grandD) + '</span>';
-    html += '<span>Haber: ' + fmt(grandH) + '</span>';
-    html += '</div>';
+    // Gran total — misma estructura de tabla que subtotales
+    html += '<div style="background:#002855;color:#fff;border-radius:8px;overflow:hidden">';
+    html += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">';
+    html += '<colgroup><col style="width:90px"><col style="width:80px"><col><col style="width:110px"><col style="width:110px"><col style="width:110px"></colgroup>';
+    html += '<tr>';
+    html += '<td style="padding:10px 8px;font-size:12px;font-weight:700">GRAN TOTAL</td>';
+    html += '<td></td><td></td>';
+    html += '<td style="padding:10px 8px;text-align:right;font-size:12px;font-weight:700">' + fmt(grandD) + '</td>';
+    html += '<td style="padding:10px 8px;text-align:right;font-size:12px;font-weight:700">' + fmt(grandH) + '</td>';
+    html += '<td></td>';
+    html += '</tr></table></div>';
 
     window._amirAuxData = { cuentasIds:cuentasIds, porCuenta:porCuenta, catMap:catMap, polMap:polMap, per:per, MESES:MESES };
     cont.innerHTML = html;
