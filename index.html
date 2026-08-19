@@ -386,11 +386,17 @@
         <div id="subpanel-balanza" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px"><div id="amirBalanzaCont"><p style="color:var(--muted);font-size:13px">Calcula la balanza primero.</p></div></div>
         <div id="subpanel-estados" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px"><div id="amirEstadosCont"><p style="color:var(--muted);font-size:13px">Genera estados primero.</p></div></div>
         <div id="subpanel-auxiliar" class="card" style="margin:0;display:none;border-radius:0 8px 8px 8px">
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <select id="amirAuxCuenta" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:220px"><option value="">&mdash; Selecciona cuenta &mdash;</option></select>
-            <button onclick="amirVerAuxiliar()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer">&#128209; Ver Auxiliar T</button>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+            <select id="amirAuxCuenta" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:220px">
+              <option value="">&#8212; Todas las cuentas &#8212;</option>
+            </select>
+            <button onclick="amirVerAuxiliar()" style="padding:8px 16px;border:none;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;cursor:pointer">&#128209; Ver Auxiliar</button>
+            <button onclick="amirAuxExcel()" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--brand);font-weight:600;cursor:pointer;font-size:12px">&#128229; Excel</button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
+              <input type="checkbox" id="amirAuxSoloMovs" style="cursor:pointer"> Solo cuentas con movimientos
+            </label>
           </div>
-          <div id="amirAuxCont"><p style="color:var(--muted);font-size:13px">Selecciona una cuenta.</p></div>
+          <div id="amirAuxCont"><p style="color:var(--muted);font-size:13px">Selecciona una cuenta o elige "Todas".</p></div>
         </div>
       </div>
 
@@ -2176,6 +2182,44 @@ async function amirBorrarSeleccionadas() {
 }
 window.amirBorrarSeleccionadas = amirBorrarSeleccionadas;
 
+function amirActualizarSel() {
+  var chks = document.querySelectorAll('.amir-pol-chk:checked');
+  var tot  = document.querySelectorAll('.amir-pol-chk');
+  var btn  = document.getElementById('amirBtnBorrarSel');
+  var cnt  = document.getElementById('amirSelCount');
+  var cm   = document.getElementById('amirChkTodas');
+  var n    = chks.length;
+  if (btn) { btn.disabled=n===0; btn.style.cursor=n===0?'not-allowed':'pointer'; }
+  if (cnt) cnt.textContent = n>0 ? n+' selecc.' : '';
+  if (cm)  cm.checked = tot.length>0 && n===tot.length;
+}
+window.amirActualizarSel = amirActualizarSel;
+
+function amirToggleTodasChk(el) {
+  document.querySelectorAll('.amir-pol-chk').forEach(function(c){ c.checked=el.checked; });
+  amirActualizarSel();
+}
+window.amirToggleTodasChk = amirToggleTodasChk;
+
+async function amirBorrarUna(polId) {
+  if (!confirm('¿Borrar esta póliza? No se puede deshacer.')) return;
+  var r = await sb.from('cont_polizas').delete().eq('id', polId);
+  if (r.error) { alert('Error: '+r.error.message); return; }
+  amirCargarPolizas();
+}
+window.amirBorrarUna = amirBorrarUna;
+
+async function amirBorrarSeleccionadas() {
+  var chks = document.querySelectorAll('.amir-pol-chk:checked');
+  if (!chks.length) return;
+  var ids = Array.from(chks).map(function(c){ return c.value; });
+  if (!confirm('¿Borrar '+ids.length+' póliza'+(ids.length>1?'s':'')+' ? No se puede deshacer.')) return;
+  var r = await sb.from('cont_polizas').delete().in('id', ids);
+  if (r.error) { alert('Error: '+r.error.message); return; }
+  amirCargarPolizas();
+}
+window.amirBorrarSeleccionadas = amirBorrarSeleccionadas;
+
 // ── Modal de Póliza (Promise.all, CONTPAQi-style) ─────────────────────────
 
 function cerrarPolizaModal() {
@@ -2409,40 +2453,127 @@ async function amirCargarCuentasAux() {
 function amirAuxiliar() { amirCargarCuentasAux(); amirShowResultados('auxiliar'); }
 window.amirAuxiliar = amirAuxiliar;
 async function amirVerAuxiliar() {
-  var sel=document.getElementById('amirAuxCuenta');
-  if (!sel||!sel.value) { alert('Selecciona una cuenta'); return; }
-  var ctaId=parseInt(sel.value), per=amirGetPeriodo(); if (!per) return;
-  var cont=document.getElementById('amirAuxCont');
-  cont.innerHTML='<p style="color:var(--muted)">Cargando...</p>';
+  var sel  = document.getElementById('amirAuxCuenta');
+  var ctaId = sel && sel.value ? parseInt(sel.value) : null;
+  var per  = amirGetPeriodo(); if (!per) return;
+  var soloMovs = document.getElementById('amirAuxSoloMovs') && document.getElementById('amirAuxSoloMovs').checked;
+  var cont = document.getElementById('amirAuxCont');
+  cont.innerHTML = '<p style="color:var(--muted)">Cargando...</p>';
+  var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   try {
-    var perR=await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
-    if (!perR.data) { cont.innerHTML='<p>Sin per\u00edodo.</p>'; return; }
-    var polR=await sb.from('cont_polizas').select('id,numero_poliza,fecha_poliza').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id);
-    var polMap={}; (polR.data||[]).forEach(function(p){polMap[p.id]=p;});
-    var polIds=(polR.data||[]).map(function(p){return p.id;});
-    if (!polIds.length) { cont.innerHTML='<p>Sin p\u00f3lizas.</p>'; return; }
-    var detR=await sb.from('cont_polizas_detalles').select('*').in('poliza_id',polIds).eq('cuenta_id',ctaId).order('poliza_id');
-    var ctaR=await sb.from('cont_catalogo_cuentas').select('codigo,nombre,naturaleza').eq('id',ctaId).single();
-    var cta=ctaR.data||{codigo:'',nombre:'',naturaleza:'D'};
-    var MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    var tD=0,tH=0,rD='',rH='';
-    (detR.data||[]).forEach(function(d){
-      var pol=polMap[d.poliza_id]||{};
-      var debe=parseFloat(d.debe)||0,haber=parseFloat(d.haber)||0;
-      tD+=debe; tH+=haber;
-      var row='<tr><td style="padding:4px 8px;font-size:12px">'+(pol.numero_poliza||'')+'</td><td style="padding:4px 8px;font-size:12px">'+(pol.fecha_poliza||'')+'</td><td style="padding:4px 8px;font-size:12px">'+(d.concepto_detalle||'')+'</td>';
-      if(debe) rD+=row+'<td style="padding:4px 8px;text-align:right;font-weight:600;color:#1d6f42">'+fmt(debe)+'</td></tr>';
-      if(haber) rH+=row+'<td style="padding:4px 8px;text-align:right;font-weight:600;color:#a32d2d">'+fmt(haber)+'</td></tr>';
+    var perR = await sb.from('cont_periodos').select('id').eq('empresa_id',AMIR_ID).eq('anio',per.anio).eq('mes',per.mes).maybeSingle();
+    if (!perR.data) { cont.innerHTML='<p>Sin período.</p>'; return; }
+    var polR = await sb.from('cont_polizas').select('id,numero_poliza,fecha_poliza,tipo_poliza').eq('empresa_id',AMIR_ID).eq('periodo_id',perR.data.id).order('numero_poliza');
+    var polMap = {}; (polR.data||[]).forEach(function(p){ polMap[p.id]=p; });
+    var polIds = (polR.data||[]).map(function(p){ return p.id; });
+    if (!polIds.length) { cont.innerHTML='<p>Sin pólizas en el período.</p>'; return; }
+
+    // Detalles: todos o por cuenta
+    var qDet = sb.from('cont_polizas_detalles').select('*').in('poliza_id', polIds).order('poliza_id');
+    if (ctaId) qDet = qDet.eq('cuenta_id', ctaId);
+    var detR = await qDet;
+
+    // Catálogo
+    var catR = await sb.from('cont_catalogo_cuentas').select('id,codigo,nombre,naturaleza').eq('empresa_id',AMIR_ID).order('codigo');
+    var catMap = {}; (catR.data||[]).forEach(function(ct){ catMap[ct.id]=ct; });
+
+    // Agrupar detalles por cuenta
+    var porCuenta = {};
+    (detR.data||[]).forEach(function(d) {
+      var cid = d.cuenta_id;
+      if (!porCuenta[cid]) porCuenta[cid] = { detalles:[], tD:0, tH:0 };
+      porCuenta[cid].detalles.push(d);
+      porCuenta[cid].tD += parseFloat(d.debe)||0;
+      porCuenta[cid].tH += parseFloat(d.haber)||0;
     });
-    var saldo=cta.naturaleza.trim()==='D'?tD-tH:tH-tD;
-    var th='padding:5px 8px;text-align:left;font-size:12px';
-    var tbl=function(rows,tot,col){ return '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--brand);color:#fff"><th style="'+th+'">P\u00f3liza</th><th style="'+th+'">Fecha</th><th style="'+th+'">Concepto</th><th style="'+th+';text-align:right">Monto</th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="padding:8px;text-align:center;color:var(--muted);font-size:12px">Sin movimientos</td></tr>')+'</tbody><tfoot><tr style="background:var(--border);font-weight:700"><td colspan="3" style="padding:5px 8px;font-size:12px">Total</td><td style="padding:5px 8px;text-align:right;font-size:12px;color:'+col+'">'+fmt(tot)+'</td></tr></tfoot></table>'; };
-    var html='<h4 style="margin:0 0 10px 0">'+cta.codigo+' \u2014 '+cta.nombre+' | '+MESES[per.mes]+' '+per.anio+'</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h5 style="color:#1d6f42;text-align:center;margin:0 0 6px 0">DEBE</h5>'+tbl(rD,tD,'#1d6f42')+'</div><div><h5 style="color:#a32d2d;text-align:center;margin:0 0 6px 0">HABER</h5>'+tbl(rH,tH,'#a32d2d')+'</div></div>';
-    html+='<div style="margin-top:10px;padding:8px 14px;background:var(--panel);border-radius:8px;display:flex;gap:20px;font-size:13px"><span><b>Debe:</b> '+fmt(tD)+'</span><span><b>Haber:</b> '+fmt(tH)+'</span><span style="font-weight:700;color:'+(saldo>=0?'#1d6f42':'#a32d2d')+'">Saldo '+(cta.naturaleza.trim()==='D'?'Deudor':'Acreedor')+': '+fmt(Math.abs(saldo))+'</span></div>';
-    cont.innerHTML=html;
+
+    var cuentasIds = Object.keys(porCuenta).map(Number);
+    if (soloMovs) cuentasIds = cuentasIds.filter(function(id){ return porCuenta[id].tD>0 || porCuenta[id].tH>0; });
+
+    // Ordenar por código
+    cuentasIds.sort(function(a,b){
+      var ca = (catMap[a]||{}).codigo||''; var cb = (catMap[b]||{}).codigo||'';
+      return ca.localeCompare(cb);
+    });
+
+    if (!cuentasIds.length) { cont.innerHTML='<p style="color:var(--muted)">Sin movimientos en el período.</p>'; return; }
+
+    var th = 'padding:5px 8px;text-align:left;font-size:11px';
+    var grandD=0, grandH=0;
+    var html = '<div style="font-weight:700;font-size:13px;color:#002855;margin-bottom:12px">Auxiliar del Libro Mayor — ' + MESES[per.mes] + ' ' + per.anio + (ctaId ? '' : ' — Todas las cuentas') + '</div>';
+
+    cuentasIds.forEach(function(cid) {
+      var cta = catMap[cid] || { codigo:'???', nombre:'Sin nombre', naturaleza:'D' };
+      var data = porCuenta[cid];
+      var saldo = cta.naturaleza.trim()==='D' ? data.tD-data.tH : data.tH-data.tD;
+      grandD += data.tD; grandH += data.tH;
+
+      html += '<div style="margin-bottom:16px;border:1px solid #d0dff5;border-radius:8px;overflow:hidden">';
+      // Encabezado cuenta
+      html += '<div style="background:#002855;color:#fff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center">';
+      html += '<span style="font-weight:700;font-size:13px">' + cta.codigo + ' — ' + cta.nombre + '</span>';
+      html += '<span style="font-size:11px;opacity:.8">Saldo ' + (cta.naturaleza.trim()==='D'?'Deudor':'Acreedor') + ': ' + fmt(Math.abs(saldo)) + '</span>';
+      html += '</div>';
+      // Tabla de movimientos
+      html += '<table style="width:100%;border-collapse:collapse">';
+      html += '<thead><tr style="background:#e8f0fb"><th style="'+th+'">Póliza</th><th style="'+th+'">Fecha</th><th style="'+th+'">Concepto</th><th style="'+th+';text-align:right;color:#1d6f42">Debe</th><th style="'+th+';text-align:right;color:#a32d2d">Haber</th><th style="'+th+';text-align:right">Saldo</th></tr></thead><tbody>';
+      var saldoAcum = 0;
+      data.detalles.forEach(function(d) {
+        var pol  = polMap[d.poliza_id] || {};
+        var debe = parseFloat(d.debe)||0, haber = parseFloat(d.haber)||0;
+        saldoAcum += cta.naturaleza.trim()==='D' ? debe-haber : haber-debe;
+        html += '<tr style="border-bottom:1px solid #f0f4fb">';
+        html += '<td style="padding:4px 8px;font-size:11px;font-family:monospace">' + (pol.numero_poliza||'') + '</td>';
+        html += '<td style="padding:4px 8px;font-size:11px">' + (pol.fecha_poliza||'') + '</td>';
+        html += '<td style="padding:4px 8px;font-size:11px">' + (d.concepto_detalle||'') + '</td>';
+        html += '<td style="padding:4px 8px;text-align:right;font-size:11px;color:#1d6f42">' + (debe>0?fmt(debe):'—') + '</td>';
+        html += '<td style="padding:4px 8px;text-align:right;font-size:11px;color:#a32d2d">' + (haber>0?fmt(haber):'—') + '</td>';
+        html += '<td style="padding:4px 8px;text-align:right;font-size:11px;font-weight:600;color:'+(saldoAcum>=0?'#1d6f42':'#a32d2d')+'">' + fmt(Math.abs(saldoAcum)) + '</td>';
+        html += '</tr>';
+      });
+      // Subtotal cuenta
+      html += '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #d0dff5">';
+      html += '<td colspan="3" style="padding:5px 8px;font-size:11px">Subtotal</td>';
+      html += '<td style="padding:5px 8px;text-align:right;font-size:11px;color:#1d6f42">' + fmt(data.tD) + '</td>';
+      html += '<td style="padding:5px 8px;text-align:right;font-size:11px;color:#a32d2d">' + fmt(data.tH) + '</td>';
+      html += '<td style="padding:5px 8px;text-align:right;font-size:11px;font-weight:700;color:'+(saldo>=0?'#1d6f42':'#a32d2d')+'">' + fmt(Math.abs(saldo)) + '</td>';
+      html += '</tr></tbody></table></div>';
+    });
+
+    // Gran total
+    html += '<div style="background:#002855;color:#fff;padding:10px 16px;border-radius:8px;display:flex;gap:30px;font-size:13px;font-weight:700">';
+    html += '<span>GRAN TOTAL</span>';
+    html += '<span>Debe: ' + fmt(grandD) + '</span>';
+    html += '<span>Haber: ' + fmt(grandH) + '</span>';
+    html += '</div>';
+
+    window._amirAuxData = { cuentasIds:cuentasIds, porCuenta:porCuenta, catMap:catMap, polMap:polMap, per:per, MESES:MESES };
+    cont.innerHTML = html;
   } catch(ex){ cont.innerHTML='<p style="color:red">Error: '+ex.message+'</p>'; }
 }
 window.amirVerAuxiliar = amirVerAuxiliar;
+
+function amirAuxExcel() {
+  var d = window._amirAuxData;
+  if (!d) { alert('Genera el auxiliar primero'); return; }
+  var rows = [['Cuenta','Nombre','Póliza','Fecha','Concepto','Debe','Haber','Saldo Acum']];
+  d.cuentasIds.forEach(function(cid) {
+    var cta = d.catMap[cid]||{}; var data = d.porCuenta[cid]; var sAcum=0;
+    data.detalles.forEach(function(det) {
+      var pol = d.polMap[det.poliza_id]||{};
+      var debe=parseFloat(det.debe)||0, haber=parseFloat(det.haber)||0;
+      sAcum += cta.naturaleza&&cta.naturaleza.trim()==='D' ? debe-haber : haber-debe;
+      rows.push([cta.codigo,cta.nombre,pol.numero_poliza||'',pol.fecha_poliza||'',det.concepto_detalle||'',debe,haber,sAcum]);
+    });
+    rows.push([cta.codigo,cta.nombre,'SUBTOTAL','','',data.tD,data.tH,'']);
+    rows.push([]);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Auxiliar');
+  XLSX.writeFile(wb, 'Auxiliar_Amir_'+d.MESES[d.per.mes]+'_'+d.per.anio+'.xlsx');
+}
+window.amirAuxExcel = amirAuxExcel;
 async function amirContPAQ() {
   var per=amirGetPeriodo(); if (!per) return;
   try {
